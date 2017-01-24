@@ -108,8 +108,11 @@ export default class AddLocation extends Component {
 				placeID: location.PlaceID
 			})
 		})).then(() => {
-			this.props.navigator.resetTo({
-				screen: 'feed'
+			this.props.navigator.replace({
+				screen: 'showLocation',
+				location: {RowKey: location.PlaceID, Name: location.Name},
+				addPost: ()=>{},
+				onLocation: true
 			})
 			ToastAndroid.show('Location added successfully', ToastAndroid.LONG);
 		}).catch(error => {

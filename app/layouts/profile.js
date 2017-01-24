@@ -40,9 +40,15 @@ export default class Profile extends Component {
 
 						<View>
 							<Text style={{color: 'white'}}><Text style={{fontWeight: 'bold', fontSize: 16}}>{this.state.profile.Points}</Text> Points</Text>
-							<Text style={{color: 'white'}}><Text style={{fontWeight: 'bold'}}>{this.state.profile.PostCount}</Text> Posts</Text>
-							<Text style={{color: 'white'}}><Text style={{fontWeight: 'bold'}}>{this.state.profile.ViewCount}</Text> Post views</Text>
-							<Text style={{color: 'white'}}><Text style={{fontWeight: 'bold'}}>{this.state.profile.BoostCount}</Text> Post boosts</Text>
+							<Text style={{color: 'white'}}><Text style={{fontWeight: 'bold'}}>{this.state.profile.BoostCount}</Text> Message upvotes</Text>
+							<Text style={{color: 'white'}}><Text style={{fontWeight: 'bold'}}>{this.state.profile.LocationPostCount}</Text> Posts in created locations</Text>
+
+							
+							<Text style={{color: 'white', marginTop: 20}}><Text style={{fontWeight: 'bold'}}>{this.state.profile.PostCount}</Text> Messages posted</Text>
+							<Text style={{color: 'white'}}><Text style={{fontWeight: 'bold'}}>{this.state.profile.LocationCount}</Text> Locations created</Text>
+							<Text style={{color: 'white'}}><Text style={{fontWeight: 'bold'}}>{this.state.profile.ViewCount}</Text> Message views</Text>
+
+							
 						
 							<Text style={{color: 'white', marginTop: 20}}>Rank <Text style={{fontWeight: 'bold', fontSize: 16}}>#{this.state.profile.Rank}</Text></Text>
 							<Text style={{color: 'white'}}>Ahead of <Text style={{fontWeight: 'bold'}}>{this.state.profile.Ahead}</Text> other users</Text>

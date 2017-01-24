@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { View, Text, TextInput, Picker, TouchableNativeFeedback, ToastAndroid, Alert, Image, ToolbarAndroid} from 'react-native';
+import { View, Text, TextInput, Picker, ToastAndroid, Image, ToolbarAndroid, Button, TouchableNativeFeedback} from 'react-native';
 import ImagePicker from 'react-native-image-picker';
 import ImageResizer from 'react-native-image-resizer';
 import CacheEngine from '../components/cacheEngine.js';
@@ -8,7 +8,6 @@ export default class AddPost extends Component {
 	constructor(props){
 		super(props);
 		this.state = {
-			selectedLocation: props.locations[0],
 			message: '',
 			attachment: null
 		}
@@ -19,16 +18,11 @@ export default class AddPost extends Component {
 			<View style={{flex: 1, backgroundColor: 'white'}}>
 				<ToolbarAndroid style={{height: 50, backgroundColor: '#E91E63'}} title="New message" titleColor="white" navIcon={require('../images/back_icon.png')} onIconClicked={()=>{this.props.navigator.pop()}}/>
 
-				<View style={{padding: 20}}>
-					<Text>Posting to</Text>
-					<Picker mode={'dropdown'} style={{marginLeft: -5}} selectedValue={this.state.selectedLocation} onValueChange={(selectedLocation) => {this.setState({selectedLocation})}}>
-						{
-							this.props.locations.map((location)=>{
-								return <Picker.Item label={location.Name} key={location.PlaceID} value={location}/>
-							})
-						}
-					</Picker>
-					<Text>Message</Text>
+				<View style={{padding: 10}}>
+					<Text>To</Text>
+					<Text style={{fontWeight: 'bold', fontSize: 16}}>{this.props.location.Name}</Text>
+
+					<Text style={{marginTop: 10}}>Message</Text>
 					<TextInput style={{textAlignVertical: 'top'}} multiline={true} numberOfLines={6} underlineColorAndroid={'#E91E63'} selectionColor={'#F8BBD0'} onChangeText={(message) => this.setState({message})} autoFocus={true}/>
 					
 					<View style={{flexDirection: 'row', marginBottom: 5}}>
@@ -46,11 +40,7 @@ export default class AddPost extends Component {
 						}
 					</View>
 					
-					<TouchableNativeFeedback onPress={this.addPost.bind(this)} background={TouchableNativeFeedback.Ripple('#C2185B')}>
-						<View style={{height: 40, backgroundColor: '#E91E63', justifyContent: 'center', elevation: 2, borderRadius: 2}}>
-							<Text style={{color: 'white', textAlign: 'center', fontSize: 15}}>Post message</Text>
-						</View>
-					</TouchableNativeFeedback>
+					<Button onPress={this.addPost.bind(this)} title="Post message" color="#E91E63"/>
 				</View>
 			</View>
 		)
@@ -58,16 +48,14 @@ export default class AddPost extends Component {
 
 	addPost(){
 		if(this.state.message.length > 0){
-			CacheEngine.addPost(this.state.message, this.state.selectedLocation, this.state.attachment).then((post)=>{
+			CacheEngine.addPost(this.state.message, this.props.location, this.state.attachment, this.props.onLocation).then((post)=>{
 				ToastAndroid.show('Message posted successfully', ToastAndroid.SHORT);
 				this.props.addPost(post);
 			}).catch(error => {
-				ToastAndroid.show('An error occured while posting your message');
+				ToastAndroid.show('An error occured while posting your message', ToastAndroid.LONG);
 			})
 
 			this.props.navigator.pop();
-		}else{
-			Alert.alert('Error', 'Please enter a message first');
 		}
 	}
 
@@ -77,7 +65,7 @@ export default class AddPost extends Component {
 			return;
 		}
 		if(response.error){
-			ToastAndroid.show('An error occurred while selecting photo');
+			ToastAndroid.show('An error occurred while selecting photo', ToastAndroid.LONG);
 			return;
 		}
 

@@ -4,21 +4,17 @@ import Functions from '../components/functions.js';
 import CacheEngine from '../components/cacheEngine.js';
 
 export default class PostCard extends Component {
-	constructor(props){
-		super(props);
-	}
-
 	componentWillMount(){
 		this.state = {
 			BoostCount: this.props.post.BoostCount,
-			Boosted: this.props.post.Boosted
+			Boosted: this.props.post.Boosted,
 		}
 	}
 
-	componentWillReceiveProps(){
+	componentWillReceiveProps(nextProps){
 		this.state = {
-			BoostCount: this.props.post.BoostCount,
-			Boosted: this.props.post.Boosted
+			BoostCount: nextProps.post.BoostCount,
+			Boosted: nextProps.post.Boosted
 		}
 	}
 
@@ -27,11 +23,20 @@ export default class PostCard extends Component {
 			<TouchableNativeFeedback onPress={this.showPost.bind(this, this.props.post)} background={TouchableNativeFeedback.Ripple('#F8BBD0')}>
 				<View style={{backgroundColor: '#F5F5F5', margin: 5, padding: 10, elevation: 1}}>
 					{this.props.showLocation &&
-					<Text style={{fontWeight: 'bold', color: '#989898', alignSelf: 'center'}}>{this.props.post.LocationName}</Text>
+						<TouchableNativeFeedback onPress={this.showLocation.bind(this, {RowKey: this.props.post.PartitionKey, Name: this.props.post.LocationName})} background={TouchableNativeFeedback.Ripple('#F8BBD0')}>
+							<View style={{alignSelf: 'center'}}>
+								<Text style={{fontWeight: 'bold', color: '#989898'}}>{this.props.post.LocationName}</Text>
+							</View>
+						</TouchableNativeFeedback>
 					}
 					
+					
 					<View style={{flex: 1, flexDirection: 'row'}}>
-						<Text style={{flex: 1, fontWeight: 'bold', color: '#E91E63'}}>{this.props.post.Username}</Text>
+						<TouchableNativeFeedback onPress={this.showProfile.bind(this, this.props.post.Username)} background={TouchableNativeFeedback.Ripple('#F8BBD0')}>
+							<View style={{flex: 1}}>
+								<Text style={{fontWeight: 'bold', color: '#E91E63'}}>{this.props.post.Username}</Text>
+							</View>
+						</TouchableNativeFeedback>
 						<Text style={{flex: 1, textAlign: 'right'}}>{Functions.timeDifference(this.props.post.PostTimestamp)}</Text>
 					</View>
 
@@ -40,15 +45,21 @@ export default class PostCard extends Component {
 					</View>
 
 					{this.props.post.HasAttachment &&
-						<View style={{marginTop: 5}}>
-							<Image style={{height: 200}} source={{uri: 'https://aroundapp.blob.core.windows.net/posts/' + this.props.post.RowKey}} resizeMode={'cover'}/>
-						</View>
+						<TouchableNativeFeedback onPress={()=>{this.props.navigator.push({screen: 'showImage', rowKey: this.props.post.RowKey})}} background={TouchableNativeFeedback.Ripple('white')}>
+							<View style={{marginTop: 5}}>
+								<Image style={{height: 200}} source={{uri: 'https://aroundapp.blob.core.windows.net/posts/' + this.props.post.RowKey}} resizeMode={'cover'}/>
+							</View>
+						</TouchableNativeFeedback>
 					}
 
 					<View style={{flex: 1, flexDirection: 'row', justifyContent: 'space-between', marginTop: 5}}>
 						<View style={{flexDirection: 'row'}}>
+							{this.props.post.OnLocation &&
+							<Image style={{width: 20, height: 20, tintColor: '#707070'}} source={require('../images/onlocation_icon.png')} />
+							}
 							<Image style={{width: 20, height: 20, tintColor: '#707070'}} source={require('../images/comment_icon.png')} />
 							<Text>{this.props.post.CommentCount}</Text>
+
 						</View>
 
 						<TouchableNativeFeedback onPress={this.boost.bind(this, this.state.Boosted)} background={TouchableNativeFeedback.Ripple('#F8BBD0', true)}>
@@ -67,9 +78,7 @@ export default class PostCard extends Component {
 		this.props.navigator.push({
 			screen: 'showPost',
 			post: this.props.post,
-			updatePost: post => {
-				this.prop.updatePost(post);
-			}
+			updatePost: this.props.updatePost
 		})
 	}
 
@@ -98,4 +107,20 @@ export default class PostCard extends Component {
 			})
 		}
 	}
+
+	showLocation(location){
+		this.props.navigator.push({
+			screen: 'showLocation',
+			location: location,
+			addPost: ()=>{},
+			onLocation: true
+		})
+	}
+
+	showProfile(username){
+      this.props.navigator.push({
+        screen: 'profile',
+        profileName: username
+      })
+ 	}
 }

@@ -13,8 +13,11 @@ import ShowLocation from './app/layouts/showLocation.js';
 import AddLocation from './app/layouts/addLocation.js';
 import Profile from './app/layouts/profile.js';
 import Search from './app/layouts/search.js';
+import Locations from './app/layouts/locations.js';
+import Notifications from './app/layouts/notifications.js';
+import ShowImage from './app/layouts/showImage.js';
 
-var viewNavigator;
+var viewNavigator, currentScreen;
 BackAndroid.addEventListener('hardwareBackPress', () => {
     if (viewNavigator.getCurrentRoutes().length === 1) {
      return false;
@@ -31,7 +34,8 @@ export default class Round extends Component {
       isLoading: false,
       isOnline: true,
       user: false,
-      triedLocation: false
+      triedLocation: false,
+      currentScreen: null
     }
   }
 
@@ -41,6 +45,7 @@ export default class Round extends Component {
       	<StatusBar backgroundColor="#880E4F" barStyle="light-content" />
         {this.state.initialRoute &&
       	<Navigator ref={(nav)=>{viewNavigator = nav;}} initialRoute={this.state.initialRoute} configureScene={this.configureScene} renderScene={(route, viewNavigator) => {
+          currentScreen = route.screen;
           switch(route.screen){
       			case 'login':
       				return <Login navigator={viewNavigator} onLogin={this.onLogin.bind(this)} isOnline={this.state.isOnline}/>;
@@ -52,13 +57,13 @@ export default class Round extends Component {
               return <Feed navigator={viewNavigator} user={this.state.user} isLoading={this.setLoading.bind(this)} isOnline={this.state.isOnline}/>;
               break;
             case 'addPost':
-              return <AddPost navigator={viewNavigator} user={this.state.user} locations={route.locations} addPost={route.addPost}/>;
+              return <AddPost navigator={viewNavigator} user={this.state.user} location={route.location} addPost={route.addPost} onLocation={route.onLocation}/>;
               break;
             case 'showPost':
-              return <ShowPost navigator={viewNavigator} user={this.state.user} post={route.post} isOnline={this.state.isOnline}/>
+              return <ShowPost navigator={viewNavigator} user={this.state.user} post={route.post} isOnline={this.state.isOnline} updatePost={route.updatePost}/>
               break;
             case 'showLocation':
-              return <ShowLocation navigator={viewNavigator} user={this.state.user} location={route.location} isOnline={this.state.isOnline} isLoading={this.setLoading.bind(this)} addPost={route.addPost}/>
+              return <ShowLocation navigator={viewNavigator} user={this.state.user} location={route.location} isOnline={this.state.isOnline} isLoading={this.setLoading.bind(this)} addPost={route.addPost} onLocation={route.onLocation}/>
               break;
             case 'addLocation':
               return <AddLocation navigator={viewNavigator} user={this.state.user} />
@@ -68,6 +73,15 @@ export default class Round extends Component {
               break;
             case 'search':
               return <Search navigator={viewNavigator} user={this.state.user} isLoading={this.setLoading.bind(this)} isOnline={this.state.isOnline}/>
+              break;
+            case 'locations':
+              return <Locations navigator={viewNavigator} locations={route.locations} />
+              break;
+            case 'notifications':
+              return <Notifications navigator={viewNavigator} user={this.state.user} />
+              break;
+            case 'showImage':
+              return <ShowImage navigator={viewNavigator} rowKey={route.rowKey} />
               break;
       		}
       	}}
@@ -85,7 +99,7 @@ export default class Round extends Component {
         </View>
         }
 
-        {this.state.user &&
+        {this.state.user && 
         <TouchableNativeFeedback onPress={this.showProfile.bind(this)} background={TouchableNativeFeedback.Ripple('#F8BBD0')}>
           <View style={{height: 20, flexDirection: 'row', backgroundColor: '#E91E63', alignItems: 'center', paddingHorizontal: 10}}>
             <Text style={{color: 'white', fontWeight: 'bold'}}>{this.state.user.username}</Text>
@@ -96,7 +110,7 @@ export default class Round extends Component {
         </TouchableNativeFeedback>
         }
 
-        {(this.state.isLoading) &&
+        {this.state.isLoading &&
         <View style={{position: 'absolute', top: 60, right: 0, width: Dimensions.get('window').width, alignItems: 'center'}}>
           <View style={{backgroundColor: 'white', borderRadius: 50, padding: 5, elevation: 1}}>
             <ActivityIndicator styleAttr="Small" color="#F48FB1"/>
@@ -139,35 +153,35 @@ export default class Round extends Component {
   }
 
   getLocation(){
-    // this.setState({isLoading: true});
-    // var user = this.state.user;
-    // user.location = {
-    //   lat: 6.866747,
-    //   lon: 79.860955
-    // }
-    // this.setState({user, triedLocation: true});
+    this.setState({isLoading: true});
+    var user = this.state.user;
+    user.location = {
+      lat: 6.866747,
+      lon: 79.860955
+    }
+    this.setState({user, triedLocation: true});
 
-    LocationServicesDialogBox.checkLocationServicesIsEnabled({
-      message: "<h3>Location off</h3> Around needs your location to continue. Would you like to turn on Location?",
-      ok: "YES",
-      cancel: "NO"
-    }).then(success => {
-      navigator.geolocation.getCurrentPosition(position => {
-        var user = this.state.user;
-        user.location = {
-            lat: position.coords.latitude,
-            lon: position.coords.longitude
-        }
-        this.setState({user, triedLocation: true});
-      }, error => {
-        this.setState({triedLocation: true, isLoading: false});
-      }, {
-        enableHighAccuracy: false,
-        timeout: 20000
-      })
-    }).catch(error => {
-      this.setState({triedLocation: true, isLoading: false});
-    })
+    // LocationServicesDialogBox.checkLocationServicesIsEnabled({
+    //   message: "<h3>Location off</h3> Around needs your location to continue. Would you like to turn on Location?",
+    //   ok: "YES",
+    //   cancel: "NO"
+    // }).then(success => {
+    //   navigator.geolocation.getCurrentPosition(position => {
+    //     var user = this.state.user;
+    //     user.location = {
+    //         lat: position.coords.latitude,
+    //         lon: position.coords.longitude
+    //     }
+    //     this.setState({user, triedLocation: true});
+    //   }, error => {
+    //     this.setState({triedLocation: true, isLoading: false});
+    //   }, {
+    //     enableHighAccuracy: true,
+    //     timeout: 20000
+    //   })
+    // }).catch(error => {
+    //   this.setState({triedLocation: true, isLoading: false});
+    // })
   }
 
   getPoints(){
@@ -193,8 +207,7 @@ export default class Round extends Component {
   }
 
   showProfile(){
-    var routes = viewNavigator.getCurrentRoutes();
-    if(routes[routes.length-1].screen != 'profile'){
+    if(currentScreen != 'profile'){
       this.setLoading(false);
       viewNavigator.push({
         screen: 'profile',
