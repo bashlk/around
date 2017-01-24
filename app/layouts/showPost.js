@@ -24,7 +24,11 @@ export default class ShowPost extends Component {
 
 				<View style={{flex: 1, padding: 10}}>
 					<View style={{flexDirection: 'row'}}>
-						<Text style={{flex: 1, fontWeight: 'bold', color: '#E91E63'}}>{this.props.post.Username}</Text>
+						<TouchableNativeFeedback onPress={this.showProfile.bind(this, this.props.post.Username)} background={TouchableNativeFeedback.Ripple('#F8BBD0')}>
+							<View style={{flex: 1}}>
+								<Text style={{fontWeight: 'bold', color: '#E91E63'}}>{this.props.post.Username}</Text>
+							</View>
+						</TouchableNativeFeedback>
 						<Text style={{flex: 1, textAlign: 'right'}}>{Functions.timeDifference(this.props.post.PostTimestamp)}</Text>
 					</View>
 
@@ -33,9 +37,11 @@ export default class ShowPost extends Component {
 					</View>
 
 					{this.props.post.HasAttachment &&
-						<View style={{marginTop: 5}}>
-							<Image style={{height: 200}} source={{uri: 'https://aroundapp.blob.core.windows.net/posts/' + this.props.post.RowKey}} resizeMode={'cover'}/>
-						</View>
+						<TouchableNativeFeedback onPress={()=>{this.props.navigator.push({screen: 'showImage', rowKey: this.props.post.RowKey})}} background={TouchableNativeFeedback.Ripple('white')}>
+							<View style={{marginTop: 5}}>
+								<Image style={{height: 200}} source={{uri: 'https://aroundapp.blob.core.windows.net/posts/' + this.props.post.RowKey}} resizeMode={'cover'}/>
+							</View>
+						</TouchableNativeFeedback>
 					}
 
 					<Text style={{fontWeight: 'bold', marginTop: 5}}>Comments</Text>
@@ -44,7 +50,7 @@ export default class ShowPost extends Component {
 					}
 
 					{this.state.displayComments &&
-						<ListView dataSource={this.state.comments} renderRow={this.renderComment}/>
+						<ListView dataSource={this.state.comments} renderRow={this.renderComment.bind(this)}/>
 					}
 
 					{this.state.isLoading &&
@@ -70,7 +76,11 @@ export default class ShowPost extends Component {
 		return (
 			<View>
 				<View style={{flexDirection: 'row'}}>
-					<Text style={{flex: 1, fontWeight: 'bold', color: '#E91E63'}}>{comment.Username}</Text>
+					<TouchableNativeFeedback onPress={this.showProfile.bind(this, comment.Username)} background={TouchableNativeFeedback.Ripple('#F8BBD0')}>
+						<View style={{flex: 1}}>
+							<Text style={{fontWeight: 'bold', color: '#E91E63'}}>{comment.Username}</Text>
+						</View>
+					</TouchableNativeFeedback>
 					<Text style={{flex: 1, textAlign: 'right'}}>{Functions.timeDifference(comment.Timestamp)}</Text>
 				</View>
 
@@ -143,7 +153,7 @@ export default class ShowPost extends Component {
 
 			CacheEngine.addComment(post, this.state.comment).then(()=>{
 				this.props.updatePost(this.props.post);
-			}).catch(()=>{
+			}).catch((error)=>{
 				ToastAndroid.show('An error occurred while posting your comment', ToastAndroid.LONG);
 				this.props.post.Comments.pop();
 				this.props.post.CommentCount--;
@@ -153,4 +163,11 @@ export default class ShowPost extends Component {
 			})
 		}
 	}
+
+	showProfile(username){
+      this.props.navigator.push({
+        screen: 'profile',
+        profileName: username
+      })
+ 	}
 }

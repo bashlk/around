@@ -23,7 +23,7 @@ export default class CacheEngine{
 		postListeners.push(listener);
 	}
 	
-	static async loadPosts(postsToLoad, placeID){
+	static async loadPosts(postsToLoad, placeID, locationName){
 		var getPostIDs = [], refreshPostIDs = [], posts = [];
 
 		postsToLoad.forEach(post => {
@@ -62,13 +62,13 @@ export default class CacheEngine{
 		for(var index = 0; index < posts.length; index++){
 			if(posts[index]){
 				currentPost = refreshedPosts.shift();
-				currentPost.LocationName = postsToLoad[index].LocationName;
+				currentPost.LocationName = locationName || postsToLoad[index].LocationName;
 				var cachedPost = await AsyncStorage.getItem('@Post:' + currentPost.RowKey).then(post => JSON.parse(post));
 				currentPost = Object.assign(cachedPost, currentPost); 
 				AsyncStorage.setItem('@Post:' + currentPost.RowKey, JSON.stringify(currentPost));
 			} else {
 				currentPost = gotPosts.shift();
-				currentPost.LocationName = postsToLoad[index].LocationName;
+				currentPost.LocationName = locationName || postsToLoad[index].LocationName;
 				AsyncStorage.setItem('@Post:' + currentPost.RowKey, JSON.stringify(currentPost));
 				cachedPostIDs.set(currentPost.RowKey, null);
 			}
@@ -89,7 +89,11 @@ export default class CacheEngine{
 		return Promise.all(loadOperations);
 	}
 
-	static addPost(message, location, attachment){
+	static loadSingle(postID){
+		return AsyncStorage.getItem('@Post:' + postID).then(post => JSON.parse(post));
+	}
+
+	static addPost(message, location, attachment, onLocation){
 		return Functions.timeout(fetch(Config.SERVER + '/api/posts/addPost', {
 			method: 'POST',
 			headers: {
@@ -98,7 +102,8 @@ export default class CacheEngine{
 			body: JSON.stringify({
 				token: user.token,
 				message: message,
-				placeID: location.PlaceID
+				placeID: location.RowKey,
+				onLocation
 			})
 		})).then(response => response.json()).then(result => {
 			var uploadAttachment = 	new Promise(function(resolve, reject){
@@ -113,7 +118,7 @@ export default class CacheEngine{
 					body.append('token', user.token);
 					body.append('rowKey', result.RowKey);
 					body.append('attachment', attach);
-					body.append('placeID', location.PlaceID)
+					body.append('placeID', location.RowKey)
 
 					fetch(Config.SERVER + '/api/posts/addAttachment', {
 						method: 'POST',
@@ -131,19 +136,22 @@ export default class CacheEngine{
 			return Promise.resolve(uploadAttachment);
 		}).then((postID)=>{
 			var post = {
-				PartitionKey: location.PlaceID,
+				PartitionKey: location.RowKey,
 				RowKey: postID,
 				Message: message,
 				Username: user.username,
 				BoostCount: 0,
+				Boosted: false,
 				CommentCount: 0,
 				PostTimestamp: new Date().toISOString(),
 				LocationName: location.Name,
-				HasAttachment: attachment ? true : false
+				HasAttachment: attachment ? true : false,
+				OnLocation: onLocation
 			}
 			AsyncStorage.setItem('@Post:' + post.RowKey, JSON.stringify(post));
 			cachedPostIDs.set(post.RowKey, null);
 			AsyncStorage.setItem('@Post:CachedPosts', JSON.stringify([...cachedPostIDs]));
+			this.addInterestPost(post);
 			return post;
 		})
 	}
@@ -192,8 +200,14 @@ export default class CacheEngine{
 				comment: comment
 			})
 		})).then(()=>{
-			this.updatePost(post)
+			this.updatePost(post);
+			this.addInterestPost(post);
 		})
 
+	}
+
+	static addInterestPost(post){
+		user.interestPosts.set(post.RowKey, null);
+		AsyncStorage.setItem('@User:InterestPosts', JSON.stringify([...user.interestPosts]));
 	}
 }

@@ -8,7 +8,7 @@ export default class Search extends Component {
 		super(props);
 		this.dataSource = new ListView.DataSource({rowHasChanged: (r1, r2) => r1 !== r2});
 		this.state = {
-			resultSource: this.dataSource.cloneWithRows([]),
+			resultSource: null,
 			hasSearched: false
 		}
 		this.search = {
@@ -29,14 +29,18 @@ export default class Search extends Component {
 					<TextInput style={{flex:1, backgroundColor: 'white', padding: 2, borderRadius: 2, marginLeft: 10}} placeholder='Search for a location' underlineColorAndroid='transparent' autoCorrect={false} onChangeText={keyword => this.searchChange.call(this, keyword)}/>
 				</View>
 
-				<View style={{paddingHorizontal: 10}}>
+				<View style={{paddingHorizontal: 5}}>
 					{!this.props.isLoading() && this.search.previousResults.length==0 && this.state.hasSearched &&
-						<View style={{justifyContent: 'center', alignItems: 'center', marginTop: 10}}>
-							<Text>No locations found</Text>
-						</View>
+						<Text style={{textAlign: 'center', marginTop: 5}}>No locations found</Text>
 					}
 
-					<ListView style={{marginTop: 10}} dataSource={this.state.resultSource} renderRow={this.renderLocation.bind(this)} renderFooter={this.renderFooter.bind(this)}/>
+					{!this.props.isLoading() && !this.state.hasSearched &&
+					<Text style={{marginTop: 5}}>Trending locations</Text>
+					}
+
+					{this.state.resultSource &&
+					<ListView dataSource={this.state.resultSource} renderRow={this.renderLocation.bind(this)} />
+					}
 				</View>
 			</View>
 		)
@@ -45,23 +49,33 @@ export default class Search extends Component {
 	renderLocation(location) {
 		return (
 			<TouchableNativeFeedback onPress={this.showLocation.bind(this, location)} background={TouchableNativeFeedback.Ripple('#F8BBD0')}>
-				<View style={{backgroundColor: '#F5F5F5', padding: 10, elevation: 1, marginBottom: 5}}>
-					<Text style={{flex: 1, fontWeight: 'bold', color:'#E91E63'}}>{location.Name}</Text>
-					<Text style={{fontSize: 10}}>{location.Address}</Text>
+				<View style={{flexDirection: 'row', justifyContent: 'space-between', backgroundColor: '#F5F5F5', marginTop: 6, padding: 10, elevation: 1}}>
+					<View>
+						<Text style={{flex: 1, fontWeight: 'bold', color: '#E91E63'}}>{location.Name}</Text>
+						<Text style={{fontSize: 10}}>{location.Address}</Text>
+					</View>
+
+					{location.Activity > 0 &&
+					<View style={{justifyContent: 'center', marginRight: 10}}>
+						<View style={{width: 30, height: 20, borderRadius: 5, backgroundColor: '#E91E63', justifyContent: 'center', alignItems: 'center'}}>
+							<Text style={{color: 'white', fontWeight: 'bold'}}>{location.Activity}</Text>
+						</View>
+					</View>
+					}
 				</View>
 			</TouchableNativeFeedback>
 		)
 	}
 
-	renderFooter(){
-		return (
-			<TouchableNativeFeedback onPress={this.addLocation.bind(this)} background={TouchableNativeFeedback.Ripple('#F8BBD0')}>
-				<View style={{flex: 1, flexDirection: 'row', alignItems: 'center', backgroundColor: '#F5F5F5', elevation: 1, padding: 8}}>
-					<Image style={{width: 30, height: 30, tintColor: '#E91E63'}} source={require('../images/add_icon.png')} />
-					<Text style={{fontSize: 16, marginLeft: 5, color: '#E91E63', fontWeight: 'bold'}}>Add new location</Text>
-				</View>
-			</TouchableNativeFeedback>
-		)
+	async componentDidMount() {
+		this.props.isLoading(true);
+		var locations = await Functions.timeout(fetch(`${Config.SERVER}/api/locations/getHypeLocations?token=${this.props.user.token}`)).then(response => response.json());
+		this.props.isLoading(false);
+		if(!this.state.hasSearched){
+			this.setState({
+				resultSource: this.dataSource.cloneWithRows(locations.data)
+			})
+		}
 	}
 
 	searchChange(keyword){
@@ -69,7 +83,8 @@ export default class Search extends Component {
 
 		if(keyword.length>0){
 			this.setState({
-				hasSearched: true
+				hasSearched: true,
+				resultSource: null
 			})
 			this.props.isLoading(true);
 			keyword = keyword.toLowerCase().replace(/ /g,'');
@@ -112,18 +127,12 @@ export default class Search extends Component {
 		}
 	}
 
-	addLocation(){
-		this.props.isLoading(false);
-		this.props.navigator.push({
-			screen: 'addLocation'
-		})
-	}
-
 	showLocation(location){
 		this.props.isLoading(false);
 		this.props.navigator.push({
 			screen: 'showLocation',
-			location: location
+			location: location,
+			onLocation: false
 		})
 	}
 }

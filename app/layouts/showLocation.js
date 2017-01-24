@@ -50,7 +50,7 @@ export default class ShowLocation extends Component {
 
 	async componentDidMount() {
 		this.props.isLoading(true);
-		AsyncStorage.getItem('@Location:' + this.props.location.PlaceID).then(currentPostIDs => {
+		AsyncStorage.getItem('@Location:' + this.props.location.RowKey).then(currentPostIDs => {
 			if(currentPostIDs){
 				currentPostIDs = JSON.parse(currentPostIDs);
 				CacheEngine.loadFromCache(currentPostIDs.slice(0, Config.CACHE_INITIAL_LOAD)).then(currentPosts => {
@@ -63,8 +63,8 @@ export default class ShowLocation extends Component {
 		})
 
 		try {
-			var locationPosts = await Functions.timeout(fetch(`${Config.SERVER}/api/posts/getLocationPosts?token=${this.props.user.token}&placeID=${this.props.location.PlaceID}`).then(response => response.json()));
-			var posts = await CacheEngine.loadPosts(locationPosts.data.slice(0, Config.CACHE_INITIAL_LOAD), this.props.location.PlaceID);
+			var locationPosts = await Functions.timeout(fetch(`${Config.SERVER}/api/posts/getLocationPosts?token=${this.props.user.token}&placeID=${this.props.location.RowKey}`).then(response => response.json()));
+			var posts = await CacheEngine.loadPosts(locationPosts.data.slice(0, Config.CACHE_INITIAL_LOAD), this.props.location.RowKey, this.props.location.Name);
 
 			this.setState({
 				currentPostIDs: locationPosts.data,
@@ -72,7 +72,7 @@ export default class ShowLocation extends Component {
 				postSource: this.dataSource.cloneWithRows(posts),
 			})
 			this.props.isLoading(false);
-			AsyncStorage.setItem('@Location:' + this.props.location.PlaceID, JSON.stringify(locationPosts.data));
+			AsyncStorage.setItem('@Location:' + this.props.location.RowKey, JSON.stringify(locationPosts.data));
 		} catch(error) {
 			console.log(error);
 			ToastAndroid.show('An error occurred while loading posts. Please try again.', ToastAndroid.LONG);
@@ -87,7 +87,7 @@ export default class ShowLocation extends Component {
 			this.props.isLoading(true);
 
 			var postsToLoad = this.state.currentPostIDs.slice(currentLevel, currentLevel + Config.CACHE_INITIAL_LOAD);
-			var newPosts = await CacheEngine.loadPosts(postsToLoad).catch((error)=>{
+			var newPosts = await CacheEngine.loadPosts(postsToLoad, this.props.location.RowKey, this.props.location.Name).catch((error)=>{
 				ToastAndroid.show('An error occurred while loading more posts', ToastAndroid.LONG);
 				this.props.isLoading(false);
 			});
@@ -105,7 +105,7 @@ export default class ShowLocation extends Component {
 		this.props.isLoading(false);
 		this.props.navigator.push({
 			screen: 'addPost',
-			locations: [this.props.location],
+			location: this.props.location,
 			addPost: post => {
 				this.state.currentPosts.unshift(post);
 				this.state.currentPostIDs.unshift(post.RowKey);
@@ -115,7 +115,8 @@ export default class ShowLocation extends Component {
 				if(this.props.addPost){
 					this.props.addPost(post);
 				}
-			}
+			},
+			onLocation: this.props.onLocation
 		})
 	}
 
