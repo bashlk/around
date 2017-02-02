@@ -55,7 +55,7 @@ export default class AddLocation extends Component {
 
 	renderLocation(location) {
 		return (
-			<TouchableNativeFeedback onPress={()=>{this.selectLocation.call(this, location)}} background={TouchableNativeFeedback.Ripple('#F8BBD0')}>
+			<TouchableNativeFeedback onPress={()=>{this.selectLocation.call(this, location)}}>
 				<View style={{backgroundColor: '#F5F5F5', padding: 10, elevation: 1, margin: 2}}>
 					<Text style={{flex: 1, fontWeight: 'bold', color:'#E91E63'}}>{location.Name}</Text>
 					<Text style={{fontSize: 10}}>{location.Address}</Text>
@@ -74,7 +74,9 @@ export default class AddLocation extends Component {
 
 	searchChange(keyword){
 		clearTimeout(this.search.timer);
-		this.search.timer = setTimeout(this.searchMaps.bind(this, keyword), 1000);
+		if(keyword.length>0){
+			this.search.timer = setTimeout(this.searchMaps.bind(this, keyword), Config.SEARCH_START_TIMEOUT);
+		}
 	}
 
 	async searchMaps(keyword){
@@ -88,6 +90,7 @@ export default class AddLocation extends Component {
 			this.setState({
 				isLoading: false
 			})
+			this.props.user.tracker.trackException(`SM-${JSON.stringify(error)}`, false);
 		});
 
 		this.search.searchResults = response.data;
@@ -95,6 +98,7 @@ export default class AddLocation extends Component {
 			resultSource: this.dataSource.cloneWithRows(response.data),
 			isLoading: false
 		})
+		this.props.user.tracker.trackEvent('app', 'addSearch', {label: keyword, value: response.data.length});
 	}	
 
 	addLocation(location){
@@ -108,15 +112,18 @@ export default class AddLocation extends Component {
 				placeID: location.PlaceID
 			})
 		})).then(() => {
+			this.props.addLocation(location)
 			this.props.navigator.replace({
 				screen: 'showLocation',
-				location: {RowKey: location.PlaceID, Name: location.Name},
-				addPost: ()=>{},
+				location,
+				addPost: this.props.addPost,
 				onLocation: true
 			})
 			ToastAndroid.show('Location added successfully', ToastAndroid.LONG);
+			this.props.user.tracker.trackEvent(location.PlaceID, 'addLocation');
 		}).catch(error => {
 			ToastAndroid.show('Couldn\'t contact server. Please try again', ToastAndroid.LONG);
+			this.props.user.tracker.trackException(`AL-${JSON.stringify(error)}`, false);
 		})
 	}
 }

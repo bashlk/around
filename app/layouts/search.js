@@ -12,8 +12,8 @@ export default class Search extends Component {
 			hasSearched: false
 		}
 		this.search = {
-			timer: null,
-			previousResults: []
+			timer: null, 
+			results: []
 		}
 	}
 
@@ -21,7 +21,7 @@ export default class Search extends Component {
 		return (
 			<View style={{flex: 1,  backgroundColor: 'white'}}>
 				<View style={{height: 50, backgroundColor: '#E91E63', padding: 10, flexDirection: 'row'}}>
-					<TouchableNativeFeedback onPress={()=>{this.props.navigator.pop()}} background={TouchableNativeFeedback.Ripple('#F8BBD0')}>
+					<TouchableNativeFeedback onPress={()=>{this.props.navigator.pop()}}>
 						<View>
 							<Image style={{width: 30, height: 32}} source={require('../images/back_icon.png')} />
 						</View>
@@ -30,7 +30,7 @@ export default class Search extends Component {
 				</View>
 
 				<View style={{paddingHorizontal: 5}}>
-					{!this.props.isLoading() && this.search.previousResults.length==0 && this.state.hasSearched &&
+					{!this.props.isLoading() && this.search.results.length==0 && this.state.hasSearched &&
 						<Text style={{textAlign: 'center', marginTop: 5}}>No locations found</Text>
 					}
 
@@ -48,7 +48,7 @@ export default class Search extends Component {
 
 	renderLocation(location) {
 		return (
-			<TouchableNativeFeedback onPress={this.showLocation.bind(this, location)} background={TouchableNativeFeedback.Ripple('#F8BBD0')}>
+			<TouchableNativeFeedback onPress={this.showLocation.bind(this, location)}>
 				<View style={{flexDirection: 'row', justifyContent: 'space-between', backgroundColor: '#F5F5F5', marginTop: 6, padding: 10, elevation: 1}}>
 					<View>
 						<Text style={{flex: 1, fontWeight: 'bold', color: '#E91E63'}}>{location.Name}</Text>
@@ -69,61 +69,46 @@ export default class Search extends Component {
 
 	async componentDidMount() {
 		this.props.isLoading(true);
-		var locations = await Functions.timeout(fetch(`${Config.SERVER}/api/locations/getHypeLocations?token=${this.props.user.token}`)).then(response => response.json());
-		this.props.isLoading(false);
-		if(!this.state.hasSearched){
-			this.setState({
-				resultSource: this.dataSource.cloneWithRows(locations.data)
-			})
+		try{
+			var locations = await Functions.timeout(fetch(`${Config.SERVER}/api/locations/getHypeLocations?token=${this.props.user.token}`)).then(response => response.json());
+			if(!this.state.hasSearched){
+				this.setState({
+					resultSource: this.dataSource.cloneWithRows(locations.data)
+				})
+			}
+		} catch (error) {
+			ToastAndroid.show('An error occured while loading trending locations', ToastAndroid.LONG);
+			this.props.user.tracker.trackException(`TL-${JSON.stringify(error)}`, false);
 		}
+		this.props.isLoading(false);
 	}
 
 	searchChange(keyword){
 		clearTimeout(this.search.timer);
-
 		if(keyword.length>0){
-			this.setState({
-				hasSearched: true,
-				resultSource: null
-			})
-			this.props.isLoading(true);
-			keyword = keyword.toLowerCase().replace(/ /g,'');
-			if(this.search.previousKeyword){
-				var regex = new RegExp(`^${this.search.previousKeyword}.*`)
-				if(regex.test(keyword)){
-					var currentResults = [];
-					regex = new RegExp(`^${keyword}.*`);
-
-					this.search.previousResults.forEach(result=>{
-						if(regex.test(result.RowKey)){
-							currentResults.push(result)
-						}
-					})
-					this.setState({
-						searchResults: this.dataSource.cloneWithRows(currentResults),
-					});
-					this.props.isLoading(false);
-					return;
-				} 
-			}
-			this.search.timer = setTimeout(this.searchDB.bind(this, keyword), 1000);
-		} else {
-			this.props.isLoading(false);
+			this.search.timer = setTimeout(this.searchDB.bind(this, keyword), Config.SEARCH_START_TIMEOUT);
 		}
 	}
 
 	async searchDB(keyword){
 		try {
-			var results = await Functions.timeout(fetch(`${Config.SERVER}/api/locations/search?token=${this.props.user.token}&keyword=${keyword}`).then(response => response.json()));
-			this.search.previousKeyword = keyword;
-			this.search.previousResults = results.data;
+			this.props.isLoading(true);
 			this.setState({
-				resultSource: this.dataSource.cloneWithRows(results.data),
+				hasSearched: true,
+				resultSource: null
+			});
+
+			var results = await Functions.timeout(fetch(`${Config.SERVER}/api/locations/search?token=${this.props.user.token}&keyword=${keyword}`).then(response => response.json()));
+			this.search.results = results.data;
+			this.setState({
+				resultSource: this.dataSource.cloneWithRows(results.data)
 			});
 			this.props.isLoading(false);
+			this.props.user.tracker.trackEvent('app', 'search', {label: keyword, value: results.data.length});
 		} catch(error){
-			ToastAndroid.show('Couldn\'t contact server', ToastAndroid.LONG);
+			ToastAndroid.show('Couldn\'t contact server to search', ToastAndroid.LONG);
 			this.props.isLoading(false);
+			this.props.user.tracker.trackException(`S-${JSON.stringify(error)}`, false);
 		}
 	}
 
@@ -134,5 +119,6 @@ export default class Search extends Component {
 			location: location,
 			onLocation: false
 		})
+		this.props.user.tracker.trackEvent('app', 'trendingLocation');
 	}
 }

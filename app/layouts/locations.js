@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import {View, Text, ListView, ToolbarAndroid, TouchableNativeFeedback, Button } from 'react-native';
+import {View, Text, ListView, ToolbarAndroid, TouchableNativeFeedback, Button, ToastAndroid } from 'react-native';
 
 export default class Locations extends Component {
 	constructor(props) {
@@ -20,7 +20,7 @@ export default class Locations extends Component {
 				/>
 
 				<View style={{paddingHorizontal: 5}}>
-					<Button onPress={()=>{this.props.navigator.push({screen: 'addLocation'})}} title="Add new location" color="#E91E63"/>
+					<Button onPress={this.addLocation.bind(this)} title="Add new location" color="#E91E63"/>
 				</View>
 			</View>
 		)
@@ -28,7 +28,7 @@ export default class Locations extends Component {
 
 	renderLocation(location) {
 		return (
-			<TouchableNativeFeedback onPress={this.showLocation.bind(this, location)} background={TouchableNativeFeedback.Ripple('#F8BBD0')}>
+			<TouchableNativeFeedback onPress={this.showLocation.bind(this, location)}>
 				<View style={{flexDirection: 'row', justifyContent: 'space-between', backgroundColor: '#F5F5F5', marginHorizontal: 5, marginTop: 6, padding: 10, elevation: 1}}>
 					<View>
 						<Text style={{flex: 1, fontWeight: 'bold', color: '#E91E63'}}>{location.Name}</Text>
@@ -50,7 +50,33 @@ export default class Locations extends Component {
 		this.props.navigator.push({
 			screen: 'showLocation',
 			location: location,
+			addPost: this.props.addPost,
 			onLocation: true
+		})
+	}
+
+	addLocation(){
+		if(!this.props.isOnline){
+			ToastAndroid.show('You are offline. Please check your internet connection and try again', ToastAndroid.LONG);
+			return;
+		}
+
+		if(!this.props.user.location){
+			ToastAndroid.show('Error: Location unavailable', ToastAndroid.LONG);
+			return;
+		}
+		
+		this.props.navigator.push({
+			screen: 'addLocation', 
+			addLocation: this.addNewLocation.bind(this), 
+			addPost: this.props.addPost
+		})
+	}
+
+	addNewLocation(location){
+		this.props.addLocation(location)
+		this.setState({
+			locationSource: this.dataSource.cloneWithRows(this.props.locations)
 		})
 	}
 }

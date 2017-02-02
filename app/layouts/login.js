@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { View, Text, Image, TextInput, TouchableHighlight, TouchableNativeFeedback, Alert} from 'react-native';
+import { View, Text, Image, TextInput, TouchableHighlight, Alert, Button} from 'react-native';
 import Spinner from 'react-native-loading-spinner-overlay';
 import Config from '../components/config.js';
 import Functions from '../components/functions.js';
@@ -16,7 +16,7 @@ export default class Login extends Component {
 				<View style={{flex: 3, flexDirection: 'column', justifyContent: 'center', alignItems: 'center'}}>
 					<Image style={{width: 150, height: 150}} source={require('../images/logo.png')}/>
 					<Text style={{color: 'white', textAlign: 'center', fontSize: 24}}>Around</Text>
-					<Text style={{color: 'white'}}>Alpha 3</Text>
+					<Text style={{color: 'white'}}>Alpha 4</Text>
 				</View>	
 				<View style={{flex: 2}}>
 					<TextInput style={{backgroundColor: 'white', height: 40}} underlineColorAndroid='transparent' placeholder='Username' onChangeText={(username) => this.setState({username})}/>
@@ -27,14 +27,11 @@ export default class Login extends Component {
 							<Text style={{color: 'white', textDecorationLine: 'underline'}}>Create new account</Text>
 						</TouchableHighlight>
 					</View>
-				</View>	
-				<View style={{flex: 1, flexDirection: 'row', justifyContent: 'center'}}>
-					<TouchableNativeFeedback onPress={this.validate.bind(this)} background={TouchableNativeFeedback.Ripple('#E91E63')}>
-						<View style={{height: 40, width: 100, backgroundColor: '#C2185B', justifyContent: 'center', elevation: 2}}>
-							<Text style={{color: 'white', textAlign: 'center', fontSize: 20}}>Login</Text>
-						</View>
-					</TouchableNativeFeedback>
 				</View>
+				<View style={{flex: 1}}>
+					<Button onPress={this.validate.bind(this)} title="Login" color="#C2185B"/>
+				</View>
+
 				<Spinner visible={this.state.isLoading} />
 			</View>
 		)
@@ -84,10 +81,7 @@ export default class Login extends Component {
 						newPoints: result.Points,
 						level: Functions.calculateLevel(result.Points)
 					}
-					this.props.onLogin(user);
-					this.props.navigator.resetTo({
-						screen: 'feed'
-					})
+					this.props.onLogin(user, false);
 				}
 			}).catch(error => {
 				this.setState({isLoading: false});

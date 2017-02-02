@@ -30,7 +30,7 @@ export default class Notifications extends Component {
 
 	renderNotification(notif, secID, rowID){
 		return (
-			<TouchableNativeFeedback onPress={this.showPost.bind(this, notif.post)} background={TouchableNativeFeedback.Ripple('#F06292')}>
+			<TouchableNativeFeedback onPress={this.showPost.bind(this, notif)}>
 				<View style={{backgroundColor: rowID < this.props.user.notifications.current ? '#FCE4EC' : '#F5F5F5', padding: 5, margin: 1}}>
 					<Text>{notif.message}</Text>
 				</View>
@@ -40,13 +40,18 @@ export default class Notifications extends Component {
 
 	async componentDidMount() {
 		var loadOperations = [];
+
 		this.props.user.notifications.data.forEach(notif => {
-			loadOperations.push(
-				CacheEngine.loadSingle(notif.RowKey).then(post => {
-					var message = `${notif.Users[0]}${notif.Users.length > 1 ? ' and ' + (notif.Users.length - 1) + ' ' + ((notif.Users.length - 1) > 1 ? 'others' : 'other person'): ''} commented on the post "${post.Message.substring(0, 50)}${post.Message.length>=50 ? '...': ''}"`
-					return {post, message};
-				})
-			)
+			if(notif.Message){
+				loadOperations.push({isMessage: true, message: notif.Message})
+			} else {
+				loadOperations.push(
+					CacheEngine.loadSingle(notif.RowKey).then(post => {
+						var message = `${notif.Users[0]}${notif.Users.length > 1 ? ' and ' + (notif.Users.length - 1) + ' ' + ((notif.Users.length - 1) > 1 ? 'others' : 'other person'): ''} commented on the post "${post.Message.substring(0, 50)}${post.Message.length>=50 ? '...': ''}"`
+						return {post, message};
+					})
+				)
+			}
 		})
 
 		Promise.all(loadOperations).then(notifications=>{
@@ -61,14 +66,16 @@ export default class Notifications extends Component {
 		})
 	}
 
-	showPost(post){
-		this.props.navigator.push({
-			screen: 'showPost',
-			post: post,
-			updatePost: ()=>{
+	showPost(notif){
+		if(!notif.isMessage){
+			this.props.navigator.push({
+				screen: 'showPost',
+				post: notif.post,
+				updatePost: ()=>{
 				//what happens when you don't plan, run out of scope and 
 				//don't give a shit anymore apart from finishing this damn thing
-			}
-		})
+				}
+			})
+		}
 	}
 }

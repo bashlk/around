@@ -12,7 +12,8 @@ export default class ShowLocation extends Component {
 		this.state = {
 			postSource : null,
 			currentPosts: [],
-			actions: []
+			actions: [],
+			hasLoaded: false
 		}
 		if(this.props.addPost){
 			this.state.actions = [{title: 'Add message', icon: require('../images/add_icon.png'), show: 'always'}];
@@ -33,7 +34,7 @@ export default class ShowLocation extends Component {
 							onEndReachedThreshold={400}
 						/>}
 
-						{this.state.currentPosts.length == 0 && !this.props.isLoading() &&
+						{this.state.currentPosts.length == 0 && this.state.hasLoaded &&
 							<Text style={{textAlign: 'center'}}>No posts in this location</Text>
 						}
 					</View>
@@ -49,12 +50,12 @@ export default class ShowLocation extends Component {
 	}
 
 	async componentDidMount() {
-		this.props.isLoading(true);
 		AsyncStorage.getItem('@Location:' + this.props.location.RowKey).then(currentPostIDs => {
 			if(currentPostIDs){
 				currentPostIDs = JSON.parse(currentPostIDs);
 				CacheEngine.loadFromCache(currentPostIDs.slice(0, Config.CACHE_INITIAL_LOAD)).then(currentPosts => {
 					this.setState({
+						currentPostIDs,
 						currentPosts,
 						postSource: this.dataSource.cloneWithRows(currentPosts)
 					})
@@ -62,47 +63,71 @@ export default class ShowLocation extends Component {
 			}
 		})
 
-		try {
-			var locationPosts = await Functions.timeout(fetch(`${Config.SERVER}/api/posts/getLocationPosts?token=${this.props.user.token}&placeID=${this.props.location.RowKey}`).then(response => response.json()));
-			var posts = await CacheEngine.loadPosts(locationPosts.data.slice(0, Config.CACHE_INITIAL_LOAD), this.props.location.RowKey, this.props.location.Name);
+		if(this.props.isOnline){
+			try {
+				this.props.isLoading(true);
+				var locationPosts = await Functions.timeout(fetch(`${Config.SERVER}/api/posts/getLocationPosts?token=${this.props.user.token}&placeID=${this.props.location.RowKey}`).then(response => response.json()));
+				var posts = await CacheEngine.loadPosts(locationPosts.data.slice(0, Config.CACHE_INITIAL_LOAD), this.props.location.RowKey, this.props.location.Name);
 
-			this.setState({
-				currentPostIDs: locationPosts.data,
-				currentPosts: posts,
-				postSource: this.dataSource.cloneWithRows(posts),
-			})
-			this.props.isLoading(false);
-			AsyncStorage.setItem('@Location:' + this.props.location.RowKey, JSON.stringify(locationPosts.data));
-		} catch(error) {
-			console.log(error);
-			ToastAndroid.show('An error occurred while loading posts. Please try again.', ToastAndroid.LONG);
-			this.props.isLoading(false);
+				this.setState({
+					currentPostIDs: locationPosts.data,
+					currentPosts: posts,
+					postSource: this.dataSource.cloneWithRows(posts),
+					hasLoaded: true
+				})
+				this.props.isLoading(false);
+				AsyncStorage.setItem('@Location:' + this.props.location.RowKey, JSON.stringify(locationPosts.data));
+			} catch(error) {
+				ToastAndroid.show('An error occurred while loading posts. Please try again.', ToastAndroid.LONG);
+				this.props.isLoading(false);
+				this.props.user.tracker.trackException(`SL-${JSON.stringify(error)}`, false);
+			}
 		}
+		CacheEngine.addInterestLocation(this.props.location);
 	}
 
 	async scrollLoad(){
 		var currentLevel = this.state.currentPosts.length;
 
-		if(!this.props.isLoading() && !this.state.isOffline && currentLevel<this.state.currentPostIDs.length){
+		if(!this.props.isLoading() && currentLevel<this.state.currentPostIDs.length){
 			this.props.isLoading(true);
 
 			var postsToLoad = this.state.currentPostIDs.slice(currentLevel, currentLevel + Config.CACHE_INITIAL_LOAD);
-			var newPosts = await CacheEngine.loadPosts(postsToLoad, this.props.location.RowKey, this.props.location.Name).catch((error)=>{
-				ToastAndroid.show('An error occurred while loading more posts', ToastAndroid.LONG);
-				this.props.isLoading(false);
-			});
+			try{
+				var newPosts = null;
+				if(this.props.isOnline){
+					newPosts = await CacheEngine.loadPosts(postsToLoad, this.props.location.RowKey, this.props.location.Name);
+				} else {
+					newPosts = await CacheEngine.loadFromCache(postsToLoad);
+				}
 
-			var currentPosts = this.state.currentPosts.concat(newPosts);
-			this.setState({
-				currentPosts,
-				postSource: this.dataSource.cloneWithRows(currentPosts)
-			})
-			this.props.isLoading(false);
+				var currentPosts = this.state.currentPosts.concat(newPosts);
+				this.setState({
+					currentPosts,
+					postSource: this.dataSource.cloneWithRows(currentPosts)
+				})
+				this.props.user.tracker.trackEvent('app', 'scrollLoad', {value: currentLevel});
+			} catch (error){
+				ToastAndroid.show('An error occurred while loading more posts', ToastAndroid.LONG);
+				this.props.user.tracker.trackException(`LSL-${JSON.stringify(error)}`, false);
+			} finally {
+				this.props.isLoading(false);
+			}
 		}
 	}
 
 	actionSelected(pos){
 		this.props.isLoading(false);
+		if(!this.props.isOnline){
+			ToastAndroid.show('You are offline. Please check your internet connection and try again', ToastAndroid.LONG);
+			return;
+		}
+
+		if(!this.props.user.location){
+			ToastAndroid.show('Error: Location unavailable', ToastAndroid.LONG);
+			return;
+		}
+
 		this.props.navigator.push({
 			screen: 'addPost',
 			location: this.props.location,
@@ -112,9 +137,7 @@ export default class ShowLocation extends Component {
 				this.setState({
 					postSource: this.dataSource.cloneWithRows(this.state.currentPosts)
 				})
-				if(this.props.addPost){
-					this.props.addPost(post);
-				}
+				this.props.addPost(post);
 			},
 			onLocation: this.props.onLocation
 		})

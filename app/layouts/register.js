@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { View, Text, Image, TextInput, TouchableNativeFeedback, StatusBar, StyleSheet, Alert} from 'react-native';
+import { View, Text, Image, TextInput, StatusBar, StyleSheet, Alert, Button} from 'react-native';
 import Spinner from 'react-native-loading-spinner-overlay';
 import Config from '../components/config.js';
 import Functions from '../components/functions.js';
@@ -23,12 +23,8 @@ export default class Register extends Component {
 				<TextInput style={{backgroundColor: 'white', height: 40, marginTop: 10}} underlineColorAndroid='transparent' placeholder='Email' onChangeText={(email) => this.setState({email})}/>
 				<TextInput style={{backgroundColor: 'white', height: 40, marginTop: 10}} underlineColorAndroid='transparent' placeholder='Password' secureTextEntry={true} onChangeText={(password) => this.setState({password})}/>
 
-				<View style={{flexDirection: 'row', justifyContent: 'center', marginTop: 20}}>
-				<TouchableNativeFeedback background={TouchableNativeFeedback.Ripple('#E91E63')} onPress={this.validate.bind(this)}>
-					<View style={{height: 40, width: 100, backgroundColor: '#C2185B', justifyContent: 'center', elevation: 2}}>
-						<Text style={{color: 'white', textAlign: 'center', fontSize: 20}}>Register</Text>
-					</View>
-				</TouchableNativeFeedback>
+				<View style={{marginTop: 20}}>
+					<Button onPress={this.validate.bind(this)} title="Register" color="#C2185B"/>
 				</View>
 			</View>
 			<Spinner visible={this.state.isLoading} />
@@ -81,10 +77,7 @@ export default class Register extends Component {
 						newPoints: 5,
 						level: Functions.calculateLevel(5)
 					}
-					this.props.onLogin(user);
-					this.props.navigator.resetTo({
-						screen: 'feed'
-					})
+					this.props.onLogin(user, true);
 				}
 			}).catch(error => {
 				this.setState({isLoading: false});

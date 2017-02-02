@@ -3,16 +3,12 @@ import { View, TouchableNativeFeedback, Image } from 'react-native';
 import PhotoView from 'react-native-photo-view';
 
 export default class ShowImage extends Component {
-	constructor(props){
-		super(props);
-	}
-
 	render() {
 		return(
 			<View style={{flex: 1, backgroundColor: 'black'}}>
 				<View style={{position: 'absolute', top: 10, left: 10, height: 50, zIndex: 2}}>
-					<TouchableNativeFeedback onPress={()=>{this.props.navigator.pop()}} background={TouchableNativeFeedback.Ripple('white', true)}>
-						<View style={{width: 30, height: 30, borderRadius: 30}}>
+					<TouchableNativeFeedback onPress={()=>{this.props.navigator.pop()}}>
+						<View style={{width: 30, height: 30}}>
 							<Image style={{width: 30, height: 30}} source={require('../images/back_icon.png')} />
 						</View>
 					</TouchableNativeFeedback>

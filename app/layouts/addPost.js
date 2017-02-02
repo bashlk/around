@@ -27,14 +27,13 @@ export default class AddPost extends Component {
 					
 					<View style={{flexDirection: 'row', marginBottom: 5}}>
 						{!this.state.attachment &&
-							<TouchableNativeFeedback onPress={this.addAttachment.bind(this)} background={TouchableNativeFeedback.Ripple('#C2185B', true)}>
-							<View style={{height: 30, width: 30, borderRadius: 50}}>
+							<TouchableNativeFeedback onPress={this.addAttachment.bind(this)}>
+							<View style={{height: 30, width: 30}}>
 								<Image style={{width: 30, height: 30, tintColor: '#707070'}} source={require('../images/add_photo_icon.png')} />
 							</View>
 						</TouchableNativeFeedback>
 						}
 						
-
 						{this.state.attachment &&
 							<Image style={{width: 50, height: 50}} source={{uri: this.state.attachment}}/>
 						}
@@ -53,6 +52,7 @@ export default class AddPost extends Component {
 				this.props.addPost(post);
 			}).catch(error => {
 				ToastAndroid.show('An error occured while posting your message', ToastAndroid.LONG);
+				this.props.user.tracker.trackException(`AP-${JSON.stringify(error)}`, false);
 			})
 
 			this.props.navigator.pop();
