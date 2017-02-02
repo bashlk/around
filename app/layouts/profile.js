@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import {View, Text, Image, ListView, AsyncStorage, TouchableNativeFeedback} from 'react-native';
+import {View, Text, Image, ListView, AsyncStorage, TouchableNativeFeedback, ToastAndroid} from 'react-native';
 import ProgressBar from 'react-native-progress/Bar'
 
 import Config from '../components/config.js';
@@ -17,7 +17,7 @@ export default class Profile extends Component {
 		return (
 			<View style={{flex: 1, backgroundColor: '#E91E63'}}>
 				<View style={{height: 50, padding: 10, flexDirection: 'row', alignSelf: 'flex-start'}}>
-					<TouchableNativeFeedback onPress={()=>{this.props.navigator.pop()}} background={TouchableNativeFeedback.Ripple('#F8BBD0')}>
+					<TouchableNativeFeedback onPress={()=>{this.props.navigator.pop()}}>
 						<View>
 							<Image style={{width: 30, height: 32}} source={require('../images/back_icon.png')} />
 						</View>
@@ -62,7 +62,6 @@ export default class Profile extends Component {
 	}
 
 	async componentDidMount(){
-		this.props.isLoading(true);
 		var currentUser = this.props.user.username == this.props.profileName;
 
 		if(currentUser && this.props.user.profile){
@@ -73,18 +72,21 @@ export default class Profile extends Component {
 			})
 		}
 
-		 Functions.timeout(fetch(`${Config.SERVER}/api/users/getProfile?token=${this.props.user.token}&username=${this.props.profileName}`).then(response => response.json()).then(response => {
-		 	this.setState({
-		 		profile: response.data,
-		 		level: Functions.getLevelDetails(response.data.Points)
-		 	})
-		 	this.props.isLoading(false);
+		if(this.props.isOnline){
+			this.props.isLoading(true);
+			Functions.timeout(fetch(`${Config.SERVER}/api/users/getProfile?token=${this.props.user.token}&username=${this.props.profileName}`).then(response => response.json()).then(response => {
+				this.setState({
+					profile: response.data,
+					level: Functions.getLevelDetails(response.data.Points)
+				})
+				this.props.isLoading(false);
 
-		 	if(currentUser){
-		 		AsyncStorage.mergeItem('@User', JSON.stringify({profile: response.data}));
-		 	}
-		 })).catch(error => {
-		 	this.props.isLoading(false);
-		 })
+				if(currentUser){
+					AsyncStorage.mergeItem('@User', JSON.stringify({profile: response.data}));
+				}
+			})).catch(error => {
+				ToastAndroid.show('An error occurred while loading profile', ToastAndroid.LONG);
+			})
+		}
 	}
 }

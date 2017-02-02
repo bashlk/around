@@ -4,6 +4,9 @@ import android.app.Application;
 import android.util.Log;
 
 import com.facebook.react.ReactApplication;
+import lk.bash.androidjob.BackgroundJobPackage;
+import com.idehub.GoogleAnalyticsBridge.GoogleAnalyticsBridgePackage;
+import com.dieam.reactnativepushnotification.ReactNativePushNotificationPackage;
 import com.reactnative.photoview.PhotoViewPackage;
 import com.showlocationservicesdialogbox.LocationServicesDialogBoxPackage;
 import fr.bamlab.rnimageresizer.ImageResizerPackage;
@@ -12,12 +15,12 @@ import com.facebook.react.ReactInstanceManager;
 import com.facebook.react.ReactNativeHost;
 import com.facebook.react.ReactPackage;
 import com.facebook.react.shell.MainReactPackage;
+import com.facebook.soloader.SoLoader;
 
 import java.util.Arrays;
 import java.util.List;
 
 public class MainApplication extends Application implements ReactApplication {
-
   private final ReactNativeHost mReactNativeHost = new ReactNativeHost(this) {
     @Override
     protected boolean getUseDeveloperSupport() {
@@ -28,6 +31,9 @@ public class MainApplication extends Application implements ReactApplication {
     protected List<ReactPackage> getPackages() {
       return Arrays.<ReactPackage>asList(
           new MainReactPackage(),
+            new BackgroundJobPackage(),
+            new GoogleAnalyticsBridgePackage(),
+            new ReactNativePushNotificationPackage(),
             new PhotoViewPackage(),
             new LocationServicesDialogBoxPackage(),
             new ImageResizerPackage(),
@@ -39,5 +45,11 @@ public class MainApplication extends Application implements ReactApplication {
   @Override
   public ReactNativeHost getReactNativeHost() {
       return mReactNativeHost;
+  }
+
+  @Override
+  public void onCreate() {
+    super.onCreate();
+    SoLoader.init(this, /* native exopackage */ false);
   }
 }

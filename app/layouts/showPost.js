@@ -24,7 +24,7 @@ export default class ShowPost extends Component {
 
 				<View style={{flex: 1, padding: 10}}>
 					<View style={{flexDirection: 'row'}}>
-						<TouchableNativeFeedback onPress={this.showProfile.bind(this, this.props.post.Username)} background={TouchableNativeFeedback.Ripple('#F8BBD0')}>
+						<TouchableNativeFeedback onPress={this.showProfile.bind(this, this.props.post.Username)}>
 							<View style={{flex: 1}}>
 								<Text style={{fontWeight: 'bold', color: '#E91E63'}}>{this.props.post.Username}</Text>
 							</View>
@@ -37,7 +37,7 @@ export default class ShowPost extends Component {
 					</View>
 
 					{this.props.post.HasAttachment &&
-						<TouchableNativeFeedback onPress={()=>{this.props.navigator.push({screen: 'showImage', rowKey: this.props.post.RowKey})}} background={TouchableNativeFeedback.Ripple('white')}>
+						<TouchableNativeFeedback onPress={()=>{this.props.navigator.push({screen: 'showImage', rowKey: this.props.post.RowKey})}}>
 							<View style={{marginTop: 5}}>
 								<Image style={{height: 200}} source={{uri: 'https://aroundapp.blob.core.windows.net/posts/' + this.props.post.RowKey}} resizeMode={'cover'}/>
 							</View>
@@ -47,6 +47,10 @@ export default class ShowPost extends Component {
 					<Text style={{fontWeight: 'bold', marginTop: 5}}>Comments</Text>
 					{this.props.post.CommentCount==0 &&
 						<Text style={{textAlign: 'center'}}>No comments yet</Text>
+					}
+
+					{!this.props.isOnline && this.props.post.CommentCount > 0 && !this.props.post.Comments &&
+						<Text style={{textAlign: 'center'}}>Unable to load comments</Text>
 					}
 
 					{this.state.displayComments &&
@@ -60,14 +64,16 @@ export default class ShowPost extends Component {
 					}
 				</View>
 
+				{this.props.isOnline &&
 				<View style={{height: 45, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 10, backgroundColor: 'white'}}>
 					<TextInput style={{flex: 1}} placeholder={'Type your comment here'} onChangeText={(comment) => this.setState({comment})} value={this.state.comment}/>
-					<TouchableNativeFeedback onPress={this.addComment.bind(this)} background={TouchableNativeFeedback.Ripple('#C2185B', true)}>
-						<View style={{height: 35, width: 35, borderRadius: 50, backgroundColor: '#E91E63', justifyContent: 'center', alignItems: 'center'}}>
+					<TouchableNativeFeedback onPress={this.addComment.bind(this)}>
+						<View style={{height: 35, width: 35, borderRadius: 35, backgroundColor: '#E91E63', justifyContent: 'center', alignItems: 'center'}}>
 							<Image style={{width: 20, height: 20}} source={require('../images/send_icon.png')} />
 						</View>
 					</TouchableNativeFeedback>
 				</View>
+				}
 			</View>
 		)
 	}
@@ -76,7 +82,7 @@ export default class ShowPost extends Component {
 		return (
 			<View>
 				<View style={{flexDirection: 'row'}}>
-					<TouchableNativeFeedback onPress={this.showProfile.bind(this, comment.Username)} background={TouchableNativeFeedback.Ripple('#F8BBD0')}>
+					<TouchableNativeFeedback onPress={this.showProfile.bind(this, comment.Username)}>
 						<View style={{flex: 1}}>
 							<Text style={{fontWeight: 'bold', color: '#E91E63'}}>{comment.Username}</Text>
 						</View>
@@ -100,26 +106,28 @@ export default class ShowPost extends Component {
 				})
 			}
 
-			this.setState({
-				isLoading: true
-			})
-
-			CacheEngine.getComments(this.props.post).then((comments)=>{
-				this.props.post.CommentCount = comments.length;
-				this.props.post.Comments = comments;
-
+			if(this.props.isOnline){
 				this.setState({
-					comments: this.dataSource.cloneWithRows(comments),
-					displayComments: true,
-					isLoading: false
+					isLoading: true
 				})
-				this.props.updatePost(this.props.post);
-			}).catch((error)=>{
-				ToastAndroid.show('Couldn\'t contact server to retrieve comments', ToastAndroid.LONG);
-				this.setState({
-					isLoading: false
+				CacheEngine.getComments(this.props.post).then((comments)=>{
+					this.props.post.CommentCount = comments.length;
+					this.props.post.Comments = comments;
+
+					this.setState({
+						comments: this.dataSource.cloneWithRows(comments),
+						displayComments: true,
+						isLoading: false
+					})
+					this.props.updatePost(this.props.post);
+				}).catch((error)=>{
+					ToastAndroid.show('Couldn\'t contact server to retrieve comments', ToastAndroid.LONG);
+					this.setState({
+						isLoading: false
+					})
+					this.props.user.tracker.trackException(`LC-${JSON.stringify(error)}`, false);
 				})
-			})
+			}
 		}
 	}
 
@@ -160,6 +168,7 @@ export default class ShowPost extends Component {
 				this.setState({
 					comments: this.dataSource.cloneWithRows(this.props.post.Comments)
 				})
+				this.props.user.tracker.trackException(`AC-${JSON.stringify(error)}`, false);
 			})
 		}
 	}

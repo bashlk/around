@@ -2,13 +2,18 @@ import { AsyncStorage } from 'react-native';
 import Config from '../components/config.js';
 import Functions from '../components/functions.js';
 
-var cachedPostIDs = new Map();
+var cachedPostIDs = new Map(), interestLocations = new Map();
 var postListeners = [];
 var user = '';
 
 export default class CacheEngine{
 	static initialize(currentUser){
 		user = currentUser;
+		AsyncStorage.getItem('@User:InterestLocations').then(value => {
+			if(value){
+				interestLocations = new Map(JSON.parse(value))
+			}
+		})
 		return AsyncStorage.getItem('@Post:CachedPosts').then(cached => {
 			if(cached){
 				cachedPostIDs = new Map(JSON.parse(cached));
@@ -83,7 +88,9 @@ export default class CacheEngine{
 		var loadOperations = []
 		posts.forEach(post => {
 			loadOperations.push(AsyncStorage.getItem('@Post:' + post.RowKey).then(post => {
-				return JSON.parse(post);
+				if(post){
+					return JSON.parse(post);
+				}
 			}))
 		})
 		return Promise.all(loadOperations);
@@ -91,6 +98,30 @@ export default class CacheEngine{
 
 	static loadSingle(postID){
 		return AsyncStorage.getItem('@Post:' + postID).then(post => JSON.parse(post));
+	}
+
+	static loadLocations(locations){
+		var locationsToGet = [], temp = null;
+		locations.forEach(location => {
+			temp = {
+				placeID: location.RowKey,
+			}
+			if(interestLocations.has(location.RowKey)){
+				temp.lastSync = interestLocations.get(location.RowKey).lastSync
+			}
+			locationsToGet.push(temp)
+		})
+
+		return Functions.timeout(fetch(`${Config.SERVER}/api/locations/getLocationActivity?token=${user.token}&locations=${JSON.stringify(locationsToGet)}`)).then(response => response.json()).then(response => {
+			var index = 0
+			response.data.forEach(location => {
+				locations[index].Activity = location.Activity;
+				index++;
+			})
+
+			locations.sort((a, b)=>b.Activity - a.Activity);
+			return locations;
+		})
 	}
 
 	static addPost(message, location, attachment, onLocation){
@@ -128,9 +159,11 @@ export default class CacheEngine{
 						body: body
 					}).then(()=>{
 						resolve(result.RowKey);
+						user.tracker.trackEvent(location.RowKey, 'addPost', {label: 'image'});
 					})
 				} else {
 					resolve(result.RowKey);
+					user.tracker.trackEvent(location.RowKey, 'addPost', {label: 'text'});
 				}
 			})
 			return Promise.resolve(uploadAttachment);
@@ -176,6 +209,10 @@ export default class CacheEngine{
 			})
 		})).then(() => {
 			this.updatePost(post);
+			user.tracker.trackEvent(post.PlaceID, 'boost', {label: post.RowKey});
+		}).catch(error => {
+			user.tracker.trackException(`B-${JSON.stringify(error)}`, false);
+			throw new Error('Boost error');
 		})
 	}
 
@@ -202,6 +239,7 @@ export default class CacheEngine{
 		})).then(()=>{
 			this.updatePost(post);
 			this.addInterestPost(post);
+			user.tracker.trackEvent(post.PlaceID, 'comment', {label: post.RowKey});
 		})
 
 	}
@@ -209,5 +247,17 @@ export default class CacheEngine{
 	static addInterestPost(post){
 		user.interestPosts.set(post.RowKey, null);
 		AsyncStorage.setItem('@User:InterestPosts', JSON.stringify([...user.interestPosts]));
+	}
+
+	static addInterestLocation(location){
+		if(!interestLocations.has(location.RowKey)){
+			interestLocations.set(location.RowKey, {name: location.Name, count: 1, lastSync: new Date().toISOString()})
+		} else {
+			var interestLocation = interestLocations.get(location.RowKey);
+			interestLocation.count++;
+			interestLocation.lastSync = new Date().toISOString();
+		}
+
+		AsyncStorage.setItem('@User:InterestLocations', JSON.stringify([...interestLocations]));
 	}
 }
