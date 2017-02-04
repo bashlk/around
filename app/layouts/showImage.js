@@ -9,7 +9,7 @@ export default class ShowImage extends Component {
 				<View style={{position: 'absolute', top: 10, left: 10, height: 50, zIndex: 2}}>
 					<TouchableNativeFeedback onPress={()=>{this.props.navigator.pop()}}>
 						<View style={{width: 30, height: 30}}>
-							<Image style={{width: 30, height: 30}} source={require('../images/back_icon.png')} />
+							<Image style={{width: 25, height: 25}} source={{uri: 'ic_arrow_back_white_24dp'}} />
 						</View>
 					</TouchableNativeFeedback>
 				</View>

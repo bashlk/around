@@ -21,13 +21,14 @@ export default class AddLocation extends Component {
 	render() {
 		return (
 			<View style={{flex: 1,  backgroundColor: 'white'}}>
-				<ToolbarAndroid style={{height: 50, backgroundColor: '#E91E63'}} title="Add Location" titleColor="white" navIcon={require('../images/back_icon.png')} onIconClicked={()=>{this.props.navigator.pop()}}/>
+				<ToolbarAndroid style={{height: 50, backgroundColor: '#E91E63'}} title="Add Location" titleColor="white" navIcon={{uri: 'ic_arrow_back_white_24dp'}} onIconClicked={()=>{this.props.navigator.pop()}}/>
 				<View style={{flex: 1, padding: 10, justifyContent: 'space-between'}}>
 					<View style={{flex: 1}}>
 						<Text>Add new location from Google Maps</Text>
 						<TextInput style={{marginLeft: -4}} underlineColorAndroid={'#E91E63'} selectionColor={'#F8BBD0'} placeholder="Search for a location" onChangeText={keyword => this.searchChange.call(this, keyword)}/>
-						<Text style={{fontSize: 10}}>Note: You can only add locations around your current location (1.5KM). Only buildings can be added. Due to an issue with Google maps, some results may not be in English but will be added to Around in English.</Text>
-						
+						<Text style={{fontSize: 10}}>Note: You can only add locations around your current location (1.3KM). Roads and city areas (e.g. Colombo) cannot be added. Due to an issue with Google maps, some results may not be in English but will be added to Around in English.</Text>
+						<Image style={{height: 20, width: 150}} source={require('../images/powered_by_google_icon.png')} resizeMode='contain'/>
+
 						{!this.state.isLoading && this.search.searchResults.length==0 && this.state.hasSearched &&
 							<View style={{justifyContent: 'center', alignItems: 'center'}}>
 								<Text>No locations found</Text>
@@ -41,13 +42,12 @@ export default class AddLocation extends Component {
 						}
 
 						{!this.state.isLoading && this.search.searchResults.length>0 &&
-							<View style={{marginTop: 10}}>
+							<View style={{flex: 1, marginTop: 10}}>
 								<Text>Select a location to add</Text>
 								<ListView dataSource={this.state.resultSource} renderRow={this.renderLocation.bind(this)} />
 							</View>
 						}
 					</View>
-					<Image style={{height: 20, width: 150}} source={require('../images/powered_by_google_icon.png')} resizeMode='contain'/>
 				</View>
 			</View>
 		)
@@ -111,11 +111,17 @@ export default class AddLocation extends Component {
 				token: this.props.user.token,
 				placeID: location.PlaceID
 			})
-		})).then(() => {
-			this.props.addLocation(location)
+		})).then(response => response.json()).then((response) => {
+			var newLocation = {
+				RowKey: location.PlaceID,
+				Name: response.data.Name,
+				Address:response.data.Address
+			}
+
+			this.props.addLocation(newLocation)
 			this.props.navigator.replace({
 				screen: 'showLocation',
-				location,
+				location: newLocation,
 				addPost: this.props.addPost,
 				onLocation: true
 			})

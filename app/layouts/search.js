@@ -22,8 +22,8 @@ export default class Search extends Component {
 			<View style={{flex: 1,  backgroundColor: 'white'}}>
 				<View style={{height: 50, backgroundColor: '#E91E63', padding: 10, flexDirection: 'row'}}>
 					<TouchableNativeFeedback onPress={()=>{this.props.navigator.pop()}}>
-						<View>
-							<Image style={{width: 30, height: 32}} source={require('../images/back_icon.png')} />
+						<View style={{justifyContent: 'center'}}>
+							<Image style={{width: 25, height: 25}} source={{uri: 'ic_arrow_back_white_24dp'}} />
 						</View>
 					</TouchableNativeFeedback>
 					<TextInput style={{flex:1, backgroundColor: 'white', padding: 2, borderRadius: 2, marginLeft: 10}} placeholder='Search for a location' underlineColorAndroid='transparent' autoCorrect={false} onChangeText={keyword => this.searchChange.call(this, keyword)}/>
@@ -35,7 +35,7 @@ export default class Search extends Component {
 					}
 
 					{!this.props.isLoading() && !this.state.hasSearched &&
-					<Text style={{marginTop: 5}}>Trending locations</Text>
+					<Text style={{marginTop: 5}}>Trending locations on Around</Text>
 					}
 
 					{this.state.resultSource &&

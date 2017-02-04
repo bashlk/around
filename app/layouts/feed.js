@@ -62,14 +62,13 @@ export default class Feed extends Component {
 			
 			<View style={{flex: 20}}>
 				<View style={{flex: 3, marginTop: 10}}>
-					{this.state.currentLocations.length > 0 &&
 					<ListView
 						dataSource={this.state.postSource}
 						renderRow={this.renderPost.bind(this)}
 						renderHeader={this.renderHeader.bind(this)}
 						onEndReached={this.scrollLoad.bind(this)}
 						onEndReachedThreshold={400}
-					/>}
+					/>
 				</View>
 			</View>
 		</View>
@@ -85,19 +84,25 @@ export default class Feed extends Component {
 	renderHeader(){
 		return (
 			<View style={{flex: 1}}>
-				<Text style={{marginLeft: 10}}>Locations around</Text>
-				{!this.feed.isLoading && this.state.currentLocations.length == 0 &&
-					<Text style={{textAlign: 'center'}}>No locations around. Add a new location or explore other locations with search</Text>
+				{this.feed.loaded && this.state.currentLocations.length == 0 &&
+					<View style={{marginVertical: 15}}>
+						<Text style={{textAlign: 'center'}}>No locations around.</Text>
+						<Text style={{textAlign: 'center', fontSize: 10}}>Add a new location or explore other locations with search</Text>
+					</View>
 				}
 				{this.state.currentLocations.length > 0 &&
-				<ListView
-					dataSource={this.state.locationSource}
-					renderRow={this.renderLocation.bind(this)}
-				/>}
+				<View>
+					<Text style={{marginLeft: 10}}>Locations around</Text>
+					<ListView
+						dataSource={this.state.locationSource}
+						renderRow={this.renderLocation.bind(this)}
+					/>
+				</View>
+				}
 
 				<View style={{paddingHorizontal: 5, marginTop: 6}}>
 					{this.state.currentLocations.length > 3 &&
-						<Button onPress={()=>{this.props.navigator.push({screen: 'locations', locations: this.state.currentLocations, addPost: this.addPost.bind(this), addLocation: this.addLocation.bind(this)})}} title="Show more locations" color="#E91E63"/>
+						<Button onPress={()=>{this.props.navigator.push({screen: 'locations', locations: this.state.currentLocations, addPost: this.addPost.bind(this), addLocation: this.addLocation.bind(this)})}} title={"View " + (this.state.currentLocations.length - 3) + " other locations"} color="#E91E63"/>
 					}
 					
 					{this.state.currentLocations.length <= 3 &&
@@ -105,9 +110,13 @@ export default class Feed extends Component {
 					}
 				</View>
 
-				<Text style={{marginLeft: 10, marginTop: 10}}>Posts around</Text>
-				{this.state.currentPosts.length == 0 &&
-					<Text style={{textAlign: 'center'}}>No posts around</Text>
+				{this.state.currentLocations.length > 0 &&
+				<View>
+					<Text style={{marginLeft: 10, marginTop: 10}}>Posts around</Text>
+						{this.state.currentPosts.length == 0 &&
+							<Text style={{textAlign: 'center'}}>No posts around</Text>
+						}
+				</View>
 				}
 			</View>
 		)	
@@ -153,12 +162,15 @@ export default class Feed extends Component {
 				})
 			})
 		}
+		if(this.props.isOnline){
+			this.loadNotifications.call(this);
+			this.props.isLoading(true);
+		}
 	}
 
 	async componentWillReceiveProps(nextProps){
 		if(nextProps.isOnline && nextProps.user.location && !this.feed.loaded && !this.feed.isLoading){
 			this.loadFeed.call(this);
-			this.loadNotifications.call(this);
 		}
 	}
 
@@ -250,7 +262,7 @@ export default class Feed extends Component {
 
 					this.props.user.notifications = {
 						data: [],
-						lastsync: new Date((new Date)*1 - 43200000).toISOString() //12 hours ago
+						lastsync: new Date().toISOString()
 					}
 					AsyncStorage.mergeItem('@User', JSON.stringify({notifications: this.props.user.notifications}));
 				} catch (error) {
@@ -261,20 +273,17 @@ export default class Feed extends Component {
 			}
 		}
 
-		if(this.props.user.interestPosts.size > 0){
-			try{
-				var interestPosts = Array.from(this.props.user.interestPosts.keys());
-				var newNotifications = await Functions.timeout(fetch(`${Config.SERVER}/api/posts/getPostActivity?token=${this.props.user.token}&posts=${JSON.stringify(interestPosts)}&lastsync=${this.props.user.notifications.lastsync}`).then(response => response.json()));
-				this.props.user.notifications.data.unshift(...newNotifications.data);
-				this.props.user.notifications.current = newNotifications.data.length
-				this.setState({
-					notifications: newNotifications.data.length
-				})
-			} catch (error) {
-				ToastAndroid.show('An error occurred while loading notifications.', ToastAndroid.LONG);
-				this.props.user.tracker.trackException(`LN-${JSON.stringify(error)}`, false);
-			}
-			
+		try{
+			var interestPosts = Array.from(this.props.user.interestPosts.keys());
+			var newNotifications = await Functions.timeout(fetch(`${Config.SERVER}/api/posts/getPostActivity?token=${this.props.user.token}&posts=${JSON.stringify(interestPosts)}&lastsync=${this.props.user.notifications.lastsync}`).then(response => response.json()));
+			this.props.user.notifications.data.unshift(...newNotifications.data);
+			this.props.user.notifications.current = newNotifications.data.length
+			this.setState({
+				notifications: newNotifications.data.length
+			})
+		} catch (error) {
+			ToastAndroid.show('An error occurred while loading notifications.', ToastAndroid.LONG);
+			this.props.user.tracker.trackException(`LN-${JSON.stringify(error)}`, false);
 		}
 	}
 
@@ -302,9 +311,10 @@ export default class Feed extends Component {
 				})
 			} else if(pos==1){
 				if(!this.feed.isLoading){
-					this.loadFeed.call(this);
-					this.loadNotifications.call(this);
 					this.props.user.tracker.trackEvent('app', 'refresh');
+					this.loadNotifications.call(this);
+					this.props.refreshLocation();
+					this.feed.loaded = false;
 				}
 			} else if(pos==2){
 				this.props.navigator.push({

@@ -19,7 +19,7 @@ export default class Profile extends Component {
 				<View style={{height: 50, padding: 10, flexDirection: 'row', alignSelf: 'flex-start'}}>
 					<TouchableNativeFeedback onPress={()=>{this.props.navigator.pop()}}>
 						<View>
-							<Image style={{width: 30, height: 32}} source={require('../images/back_icon.png')} />
+							<Image style={{width: 25, height: 25}} source={{uri: 'ic_arrow_back_white_24dp'}} />
 						</View>
 					</TouchableNativeFeedback>
 				</View>
@@ -40,6 +40,7 @@ export default class Profile extends Component {
 
 						<View>
 							<Text style={{color: 'white'}}><Text style={{fontWeight: 'bold', fontSize: 16}}>{this.state.profile.Points}</Text> Points</Text>
+							<Text style={{color: 'white'}}><Text style={{fontWeight: 'bold'}}>5</Text> Bonus points</Text>
 							<Text style={{color: 'white'}}><Text style={{fontWeight: 'bold'}}>{this.state.profile.BoostCount}</Text> Message upvotes</Text>
 							<Text style={{color: 'white'}}><Text style={{fontWeight: 'bold'}}>{this.state.profile.LocationPostCount}</Text> Posts in created locations</Text>
 

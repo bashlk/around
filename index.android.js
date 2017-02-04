@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { AppRegistry, Navigator, View, StatusBar, BackAndroid, AsyncStorage, Text, ActivityIndicator, Dimensions, NetInfo, TouchableNativeFeedback} from 'react-native';
+import { AppRegistry, Navigator, View, StatusBar, BackAndroid, AsyncStorage, Text, ActivityIndicator, Dimensions, NetInfo, TouchableNativeFeedback, ToastAndroid} from 'react-native';
 import ProgressBar from 'react-native-progress/Bar';
 import LocationServicesDialogBox from "react-native-android-location-services-dialog-box";
 import Functions from './app/components/functions.js';
@@ -24,7 +24,7 @@ import Wizard from './app/layouts/wizard.js';
 import Feedback from './app/layouts/feedback.js';
 
 var viewNavigator = null, initialRouteStack = null;
-GoogleAnalyticsSettings.setDryRun(true);
+//GoogleAnalyticsSettings.setDryRun(true);
 var tracker = new GoogleAnalyticsTracker(Config.GTRACKER_ID);
 
 BackAndroid.addEventListener('hardwareBackPress', () => {
@@ -125,6 +125,12 @@ export default class Round extends Component {
 			currentScreen: null,
 			showProfile: false
 		}
+
+		this.handleNetworkState = () =>{
+			NetInfo.isConnected.fetch().then(isOnline =>{
+				this.setState({isOnline});
+			})
+		}
 	}
 
 	render() {
@@ -141,7 +147,7 @@ export default class Round extends Component {
 							return <Register navigator={viewNavigator} onLogin={this.onLogin.bind(this)} isOnline={this.state.isOnline}/>;
 							break;
 						case 'feed':
-							return <Feed navigator={viewNavigator} user={this.state.user} isLoading={this.setLoading.bind(this)} isOnline={this.state.isOnline}/>;
+							return <Feed navigator={viewNavigator} user={this.state.user} isLoading={this.setLoading.bind(this)} isOnline={this.state.isOnline} refreshLocation={this.getLocation.bind(this)}/>;
 							break;
 						case 'addPost':
 							return <AddPost navigator={viewNavigator} user={this.state.user} location={route.location} addPost={route.addPost} onLocation={route.onLocation}/>;
@@ -180,7 +186,7 @@ export default class Round extends Component {
 				}}
 				/>}
 
-				{this.state.triedLocation && !this.state.user.location && this.state.isOnline &&
+				{this.state.showProfile && this.state.triedLocation && !this.state.user.location && this.state.isOnline &&
 					<TouchableNativeFeedback onPress={this.getLocation.bind(this)}>
 						<View style={{height: 20, backgroundColor: 'red', justifyContent: 'center'}}>
 							<Text style={{color: 'white', textAlign:'center', fontSize: 11}}>Failed to get location. Tap here to retry</Text>
@@ -231,7 +237,6 @@ export default class Round extends Component {
 	}
 
 	onLogin(user, isNewUser){
-		user.tracker = tracker;
 		this.setState({user});
 		viewNavigator.push({
 			screen: 'wizard',
@@ -244,7 +249,13 @@ export default class Round extends Component {
 			nextScreen: 'feed',
 			reset: true
 		})
+		var expiryDate = new Date();
+		expiryDate.setMonth(expiryDate.getMonth()+1)
+		user.tokenExpiry = expiryDate.toISOString();
+
 		AsyncStorage.setItem('@User', JSON.stringify(user));
+
+		user.tracker = tracker;
 		this.getLocation.call(this);
 		this.getPoints.call(this);
 		BackgroundJob.schedule();
@@ -252,10 +263,10 @@ export default class Round extends Component {
 	}
 
 	async componentWillMount(){
-		NetInfo.addEventListener('change', ()=>{
-			NetInfo.isConnected.fetch().then(isOnline =>{
-				this.setState({isOnline});
-			});
+		NetInfo.addEventListener('change', this.handleNetworkState);
+
+		NetInfo.isConnected.fetch().then(isOnline =>{
+			this.setState({isOnline});
 		});
 
 		var user = JSON.parse(await AsyncStorage.getItem('@User'));
@@ -264,6 +275,22 @@ export default class Round extends Component {
 		if(!initialRouteStack){
 			if(user){
 				user.tracker = tracker;
+				if((new Date(user.tokenExpiry).getTime() - new Date().getTime()) < 259200000){
+					try {
+						user = await this.refreshToken(user);
+						if(user.invalidated){
+							ToastAndroid.show('This user account has been disabled', ToastAndroid.LONG);
+							this.setState({initialRouteStack:[{screen: 'login'}]});
+							return;
+						}
+						tracker.trackEvent('app', 'refreshToken');
+					} catch (error){
+						ToastAndroid.show('An error occurred while getting user token. Make sure you are online and restart the app.', ToastAndroid.LONG);
+						user.tracker.trackException(`RT-${JSON.stringify(error)}`, false);
+						this.setState({isOnline: false});
+					}
+				}
+				
 				this.setState({initialRouteStack:[{screen: 'feed'}], showProfile: true});
 				this.getLocation.call(this);
 				this.getPoints.call(this);
@@ -285,14 +312,13 @@ export default class Round extends Component {
 		}
 	}
 
+	async componentWillUnmount(){
+		NetInfo.removeEventListener('change', this.handleNetworkState);
+	}
+
 	getLocation(){
-		this.setState({isLoading: true, triedLocation: false});
-		// var user = this.state.user;
-		// user.location = {
-		// 	lat: 6.866747,
-		// 	lon: 79.860955
-		// }
-		// this.setState({user, triedLocation: true});
+		this.state.user.location = null;
+		this.setState({triedLocation: false});
 
 		LocationServicesDialogBox.checkLocationServicesIsEnabled({
 		  message: "<h3>Location off</h3> Around needs your location to continue. Would you like to turn on Location?",
@@ -300,17 +326,17 @@ export default class Round extends Component {
 		  cancel: "NO"
 		}).then(success => {
 		  navigator.geolocation.getCurrentPosition(position => {
-		    var user = this.state.user;
-		    user.location = {
-		        lat: position.coords.latitude,
-		        lon: position.coords.longitude
-		    }
-		    this.setState({user, triedLocation: true, isLoading: false});
+			var user = this.state.user;
+			user.location = {
+				lat: position.coords.latitude,
+				lon: position.coords.longitude
+			}
+			this.setState({user, triedLocation: true, isLoading: false});
 		  }, error => {
-		    this.setState({triedLocation: true, isLoading: false});
+			this.setState({triedLocation: true, isLoading: false});
 		  }, {
-		    enableHighAccuracy: true,
-		    timeout: 20000
+			enableHighAccuracy: false,
+			timeout: 20000
 		  })
 		}).catch(error => {
 		  this.setState({triedLocation: true, isLoading: false});
@@ -318,7 +344,8 @@ export default class Round extends Component {
 	}
 
 	getPoints(){
-	  Functions.timeout(fetch(`${Config.SERVER}/api/users/getPoints?token=${this.state.user.token}`).then(response => response.json()).then(response => {
+	  if(this.state.isOnline){
+		Functions.timeout(fetch(`${Config.SERVER}/api/users/getPoints?token=${this.state.user.token}`).then(response => response.json()).then(response => {
 		  var user = this.state.user;
 		  user.points = user.points + user.newPoints;
 		  user.newPoints = response.data.Points - user.points;
@@ -326,8 +353,9 @@ export default class Round extends Component {
 		  this.setState({user});
 		  AsyncStorage.mergeItem('@User', JSON.stringify({points: user.points, newPoints: user.newPoints, level: user.level}));
 	  })).catch(error => {
-			console.log(error);
+		  this.state.user.tracker.trackException(`LP-${JSON.stringify(error)}`, false);
 	  })
+	  }
 	}
 
 	configureScene(route){
@@ -364,7 +392,31 @@ export default class Round extends Component {
 			viewNavigator.immediatelyResetRouteStack([route])
 		}
 	}
-}
 
+	refreshToken(user){
+		return Functions.timeout(fetch(Config.SERVER + '/api/users/refreshToken', {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json'
+			},
+			body: JSON.stringify({
+				token: user.token
+			})
+		})).then(response => response.json()).then(response => {
+			if(response.error){
+				user.invalidated = true;
+			} else {
+				user.token = response.Token
+			}
+
+			var expiryDate = new Date();
+			expiryDate.setMonth(expiryDate.getMonth()+1)
+			user.tokenExpiry = expiryDate.toISOString();
+
+			AsyncStorage.setItem('@User', JSON.stringify(user));
+			return user;
+		})
+	}
+}
 
 AppRegistry.registerComponent('Round', () => Round);

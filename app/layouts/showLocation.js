@@ -23,7 +23,7 @@ export default class ShowLocation extends Component {
 	render() {
 		return (
 			<View style={{flex: 1,  backgroundColor: 'white'}}>
-				<ToolbarAndroid style={{height: 50, backgroundColor: '#E91E63'}} title={this.props.location.Name} titleColor="white" navIcon={require('../images/back_icon.png')} onIconClicked={()=>{this.props.navigator.pop()}} actions={this.state.actions} onActionSelected={this.actionSelected.bind(this)}/>
+				<ToolbarAndroid style={{height: 50, backgroundColor: '#E91E63'}} title={this.props.location.Name} titleColor="white" navIcon={{uri: 'ic_arrow_back_white_24dp'}} onIconClicked={()=>{this.props.navigator.pop()}} actions={this.state.actions} onActionSelected={this.actionSelected.bind(this)}/>
 				<View style={{flex: 20}}>
 					<View style={{flex: 3, marginTop: 10}}>
 						{this.state.currentPosts.length > 0 &&
