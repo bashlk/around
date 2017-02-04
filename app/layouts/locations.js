@@ -13,7 +13,7 @@ export default class Locations extends Component {
 	render() {
 		return(
 			<View style={{flex: 1, backgroundColor: 'white', paddingBottom: 10}}>
-				<ToolbarAndroid style={{height: 50, backgroundColor: '#E91E63'}} titleColor="white" title='Locations Around' navIcon={require('../images/back_icon.png')} onIconClicked={()=>{this.props.navigator.pop()}}/>
+				<ToolbarAndroid style={{height: 50, backgroundColor: '#E91E63'}} titleColor="white" title='Locations Around' navIcon={{uri: 'ic_arrow_back_white_24dp'}} onIconClicked={()=>{this.props.navigator.pop()}}/>
 				<ListView
 					dataSource={this.state.locationSource}
 					renderRow={this.renderLocation.bind(this)}

@@ -16,7 +16,7 @@ export default class AddPost extends Component {
 	render() {
 		return(
 			<View style={{flex: 1, backgroundColor: 'white'}}>
-				<ToolbarAndroid style={{height: 50, backgroundColor: '#E91E63'}} title="New message" titleColor="white" navIcon={require('../images/back_icon.png')} onIconClicked={()=>{this.props.navigator.pop()}}/>
+				<ToolbarAndroid style={{height: 50, backgroundColor: '#E91E63'}} title="New message" titleColor="white" navIcon={{uri: 'ic_arrow_back_white_24dp'}} onIconClicked={()=>{this.props.navigator.pop()}}/>
 
 				<View style={{padding: 10}}>
 					<Text>To</Text>
@@ -60,18 +60,18 @@ export default class AddPost extends Component {
 	}
 
 	addAttachment(){
-	ImagePicker.launchImageLibrary({}, (response)  => {
-		if(response.didCancel){
-			return;
-		}
-		if(response.error){
-			ToastAndroid.show('An error occurred while selecting photo', ToastAndroid.LONG);
-			return;
-		}
+		ImagePicker.showImagePicker({title: null, takePhotoButtonTitle: 'Take new photo', chooseFromLibraryButtonTitle: 'Select photo from gallery', mediaType: 'photo', noData: true}, response => {
+			if(response.didCancel){
+				return;
+			}
+			if(response.error){
+				ToastAndroid.show('An error occurred while selecting photo', ToastAndroid.LONG);
+				return;
+			}
 
-		ImageResizer.createResizedImage(response.uri, 1000, 500, 'JPEG', 80).then((attachment)=>{
-			this.setState({attachment})
-		});
-	});
+			ImageResizer.createResizedImage(response.uri, 1000, 500, 'JPEG', 80).then((attachment)=>{
+				this.setState({attachment})
+			});
+		})
 	}
 }

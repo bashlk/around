@@ -16,7 +16,7 @@ export default class Login extends Component {
 				<View style={{flex: 3, flexDirection: 'column', justifyContent: 'center', alignItems: 'center'}}>
 					<Image style={{width: 150, height: 150}} source={require('../images/logo.png')}/>
 					<Text style={{color: 'white', textAlign: 'center', fontSize: 24}}>Around</Text>
-					<Text style={{color: 'white'}}>Alpha 4</Text>
+					<Text style={{color: 'white'}}>Alpha</Text>
 				</View>	
 				<View style={{flex: 2}}>
 					<TextInput style={{backgroundColor: 'white', height: 40}} underlineColorAndroid='transparent' placeholder='Username' onChangeText={(username) => this.setState({username})}/>

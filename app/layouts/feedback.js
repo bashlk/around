@@ -14,7 +14,7 @@ export default class Feedback extends Component {
 	render() {
 		return (
 		<View style={{flex: 1, backgroundColor: 'white'}}>
-			<ToolbarAndroid style={{height: 50, backgroundColor: '#E91E63'}} title="Send feedback" titleColor="white" navIcon={require('../images/back_icon.png')} onIconClicked={()=>{this.props.navigator.pop()}}/>
+			<ToolbarAndroid style={{height: 50, backgroundColor: '#E91E63'}} title="Send feedback" titleColor="white" navIcon={{uri: 'ic_arrow_back_white_24dp'}} onIconClicked={()=>{this.props.navigator.pop()}}/>
 			<View style={{padding: 10}}>
 				<Text>Thank you for leaving feedback on Around. If you are reporting an issue with the app, please describe how the issue occured with as much detail as possible.</Text>
 				<TextInput style={{textAlignVertical: 'top', marginTop: 10}} multiline={true} numberOfLines={6} underlineColorAndroid={'#E91E63'} selectionColor={'#F8BBD0'} onChangeText={(message) => this.setState({message})} autoFocus={true}/>

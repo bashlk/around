@@ -14,7 +14,7 @@ export default class Notifications extends Component {
 	render() {
 		return(
 			<View style={{flex: 1, backgroundColor: 'white', paddingBottom: 10}}>
-				<ToolbarAndroid style={{height: 50, backgroundColor: '#E91E63'}} titleColor="white" title='Notifications' navIcon={require('../images/back_icon.png')} onIconClicked={()=>{this.props.navigator.pop()}}/>
+				<ToolbarAndroid style={{height: 50, backgroundColor: '#E91E63'}} titleColor="white" title='Notifications' navIcon={{uri: 'ic_arrow_back_white_24dp'}} onIconClicked={()=>{this.props.navigator.pop()}}/>
 				{this.state.notifications.length > 0 &&
 				<ListView
 					dataSource={this.state.notificationSource}

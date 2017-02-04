@@ -1,10 +1,10 @@
 import Config from '../components/config.js';
 
-var levelMap = [0, 10, 20, 40, 60, 100, 150, 200, 250, 300, 400];
+var levelMap = [0, 10, 20, 40, 60, 100, 200, 300, 600, 1000, 100000000];
 
 function getLevel(points){
-	for(var index = 0; index < 8; index++){
-		if(points < levelMap[index]){
+	for(var index = 0; index < 11; index++){
+		if(points < levelMap[index] || index == 10){
 			var level = {
 				level: index,
 				progress: (points/levelMap[index])

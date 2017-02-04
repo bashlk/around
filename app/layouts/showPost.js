@@ -1,7 +1,6 @@
 import React, { Component } from 'react';
-import { View, Text, Image, ListView, TextInput, ActivityIndicator, AsyncStorage, ToastAndroid, TouchableNativeFeedback, Alert, ToolbarAndroid, KeyboardAvoidingView} from 'react-native';
+import { View, Text, Image, ListView, TextInput, ActivityIndicator, ToastAndroid, TouchableNativeFeedback, ToolbarAndroid} from 'react-native';
 
-import Config from '../components/config.js';
 import Functions from '../components/functions.js';
 import CacheEngine from '../components/cacheEngine.js';
 const dismissKeyboard = require('dismissKeyboard');
@@ -20,7 +19,7 @@ export default class ShowPost extends Component {
 	render() {
 		return(
 			<View style={{flex: 1, backgroundColor: 'white', justifyContent: 'space-between'}}>
-				<ToolbarAndroid style={{height: 50, backgroundColor: '#E91E63'}} titleColor="white" title={this.props.post.LocationName} navIcon={require('../images/back_icon.png')} onIconClicked={()=>{this.props.navigator.pop()}}/>
+				<ToolbarAndroid style={{height: 50, backgroundColor: '#E91E63'}} titleColor="white" title={this.props.post.LocationName} navIcon={{uri: 'ic_arrow_back_white_24dp'}} onIconClicked={()=>{this.props.navigator.pop()}}/>
 
 				<View style={{flex: 1, padding: 10}}>
 					<View style={{flexDirection: 'row'}}>

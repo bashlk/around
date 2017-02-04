@@ -33,7 +33,7 @@ export default class PostCard extends Component {
 					
 					<View style={{flex: 1, flexDirection: 'row'}}>
 						<TouchableNativeFeedback onPress={this.showProfile.bind(this, this.props.post.Username)}>
-							<View style={{flex: 1}}>
+							<View>
 								<Text style={{fontWeight: 'bold', color: '#E91E63'}}>{this.props.post.Username}</Text>
 							</View>
 						</TouchableNativeFeedback>
