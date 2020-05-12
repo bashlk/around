@@ -1,0 +1,23 @@
+{
+  "name": "AroundAPI",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "start": "node ./bin/www"
+  },
+  "dependencies": {
+    "async": "^2.1.2",
+    "azure-storage": "^1.3.2",
+    "body-parser": "^1.14.2",
+    "container-sortedlist": "^0.1.3",
+    "express": "~4.14.0",
+    "jsonwebtoken": "^7.1.9",
+    "multer": "^1.2.1",
+    "mysql": "^2.12.0",
+    "nconf": "^0.8.4",
+    "node-fetch": "^1.6.3",
+    "password-hash": "^1.2.2",
+    "sorted-set": "^0.3.0",
+    "streamifier": "^0.1.1"
+  }
+}

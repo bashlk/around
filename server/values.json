@@ -1,0 +1,8 @@
+{
+  "STORAGE_NAME": "aroundapp",
+  "STORAGE_KEY": "",
+  "TOKEN_SECRET": "",
+  "TOKEN_EXPIRY": "30 days",
+  "FINAL_POSTID": 0,
+  "MAPS_KEY": ""
+}
